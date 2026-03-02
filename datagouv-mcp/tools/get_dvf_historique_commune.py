@@ -80,6 +80,27 @@ def register_get_dvf_historique_commune_tool(mcp: FastMCP) -> None:
         if not code_commune:
             return "❌ Error: code_commune cannot be empty."
 
+        # Paris arrondissements (75101–75120) are NOT in the annual commune files.
+        # Annual DVF files only store Paris as a single commune (code 75056).
+        # The cumulative dataset 851d342f-9c96-41c1-924a-11a7a7aae8a6 has arrondissement breakdown
+        # but only for the full 2014-2024 period (no per-year split).
+        if code_commune.startswith("75") and len(code_commune) == 5 and code_commune[2:].isdigit():
+            arr_num = int(code_commune[2:])
+            if 101 <= arr_num <= 120:
+                return (
+                    f"⚠️  Les arrondissements parisiens (75101–75120) ne sont PAS disponibles "
+                    f"dans les fichiers DVF annuels par commune.\n\n"
+                    f"Options disponibles :\n"
+                    f"1. Série temporelle pour PARIS entier → utilise code_commune='75056'\n"
+                    f"2. Prix médians cumulés (2014–2024) par arrondissement → "
+                    f"query_cache('851d342f-9c96-41c1-924a-11a7a7aae8a6', "
+                    f"\"SELECT code_geo, libelle_geo, med_prix_m2_whole_appartement, "
+                    f"med_prix_m2_whole_maison FROM data WHERE echelle_geo='arrondissement' "
+                    f"AND code_parent='75056' ORDER BY med_prix_m2_whole_appartement DESC\")\n\n"
+                    f"Note : les données DVF annuelles par arrondissement n'existent pas "
+                    f"sous forme de fichier CSV simple sur data.gouv.fr."
+                )
+
         logger.info(f"Fetching DVF historique for commune {code_commune} (2014-2024)")
 
         async with httpx.AsyncClient(timeout=20.0) as session:

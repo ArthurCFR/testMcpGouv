@@ -5,6 +5,18 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+function useDark(): boolean {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
+
 // Fix Leaflet default icon broken by webpack module resolution
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -33,6 +45,7 @@ export default function LeafletMap({
   code_insee: string;
   nom: string;
 }) {
+  const dark = useDark();
   const [geojson, setGeojson] = useState<GeoJSON.GeoJsonObject | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,9 +93,13 @@ export default function LeafletMap({
       scrollWheelZoom={false}
       zoomControl
     >
-      {/* Dark tiles — CartoDB Dark Matter */}
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        key={dark ? "dark" : "light"}
+        url={
+          dark
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        }
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
         maxZoom={19}
       />

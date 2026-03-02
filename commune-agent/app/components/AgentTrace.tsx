@@ -16,6 +16,7 @@ const TOOL_META: Record<string, { icon: string; short: string }> = {
   population: { icon: "👥", short: "Pop." },
   insee: { icon: "📊", short: "INSEE" },
   resource: { icon: "🗄️", short: "Data" },
+  cache: { icon: "🗃️", short: "Cache" },
 };
 
 function getToolMeta(toolName: string): { icon: string; short: string } {
@@ -30,9 +31,18 @@ function getToolMeta(toolName: string): { icon: string; short: string } {
 export default function AgentTrace({ messages, isRunning }: AgentTraceProps) {
   const [expanded, setExpanded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const innerContainerRef = useRef<HTMLDivElement>(null);
 
+  // Bring the trace into view only when the user explicitly expands it
   useEffect(() => {
     if (expanded) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [expanded]);
+
+  // Scroll the inner log to bottom when new tool calls arrive (while expanded)
+  useEffect(() => {
+    if (!expanded) return;
+    const el = innerContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, expanded]);
 
   const assistantParts = messages
@@ -121,7 +131,7 @@ export default function AgentTrace({ messages, isRunning }: AgentTraceProps) {
 
       {/* ── Expanded log ── */}
       {expanded && (
-        <div className="border-t border-zinc-200 dark:border-zinc-800/40 px-4 py-3 max-h-56 overflow-y-auto font-mono text-[11px] space-y-2 bg-white dark:bg-transparent">
+        <div ref={innerContainerRef} className="border-t border-zinc-200 dark:border-zinc-800/40 px-4 py-3 max-h-56 overflow-y-auto font-mono text-[11px] space-y-2 bg-white dark:bg-transparent">
           {assistantParts.map((part, i) => {
             if (part.type === "dynamic-tool" || part.type.startsWith("tool-")) {
               const toolName = String(part.toolName ?? "");

@@ -10,9 +10,11 @@ const DUR = "1.8s";
 interface Props {
   /** Adapt colors for a colored/dark background (e.g. the blue header overlay) */
   light?: boolean;
+  /** Static mode: show icons + line without any animation */
+  frozen?: boolean;
 }
 
-export default function DataQueryAnimation({ light = false }: Props) {
+export default function DataQueryAnimation({ light = false, frozen = false }: Props) {
   const iconCls = light
     ? "bg-white/15 border-white/25"
     : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700";
@@ -24,8 +26,8 @@ export default function DataQueryAnimation({ light = false }: Props) {
     ? "linear-gradient(90deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.35) 100%)"
     : "linear-gradient(90deg,rgba(59,130,246,.3) 0%,rgba(161,161,170,.2) 50%,rgba(239,68,68,.3) 100%)";
 
-  const glowA = light ? "dg-glow-white-a 2.2s ease-in-out infinite"       : "dg-glow-blue 2.2s ease-in-out infinite";
-  const glowB = light ? "dg-glow-white-b 2.2s ease-in-out 0.55s infinite" : "dg-glow-red 2.2s ease-in-out 0.55s infinite";
+  const glowA = frozen ? undefined : light ? "dg-glow-white-a 2.2s ease-in-out infinite"       : "dg-glow-blue 2.2s ease-in-out infinite";
+  const glowB = frozen ? undefined : light ? "dg-glow-white-b 2.2s ease-in-out 0.55s infinite" : "dg-glow-red 2.2s ease-in-out 0.55s infinite";
 
   const labelCls = light
     ? "text-white/55"
@@ -81,7 +83,7 @@ export default function DataQueryAnimation({ light = false }: Props) {
               className="absolute inset-x-0"
               style={{ top: "50%", height: 1, marginTop: -0.5, background: lineGradient }}
             />
-            {([0, -0.6, -1.2] as number[]).map((delay, i) => (
+            {!frozen && ([0, -0.6, -1.2] as number[]).map((delay, i) => (
               <span
                 key={`r${i}`}
                 className="absolute rounded-full"
@@ -93,7 +95,7 @@ export default function DataQueryAnimation({ light = false }: Props) {
                 }}
               />
             ))}
-            {([-0.3, -0.9, -1.5] as number[]).map((delay, i) => (
+            {!frozen && ([-0.3, -0.9, -1.5] as number[]).map((delay, i) => (
               <span
                 key={`l${i}`}
                 className="absolute rounded-full"
@@ -116,9 +118,11 @@ export default function DataQueryAnimation({ light = false }: Props) {
           </div>
         </div>
 
-        <p className={`text-[10px] tracking-wide pl-0.5 ${labelCls}`}>
-          Consultation data.gouv…
-        </p>
+        {!frozen && (
+          <p className={`text-[10px] tracking-wide pl-0.5 ${labelCls}`}>
+            Consultation data.gouv…
+          </p>
+        )}
       </div>
     </>
   );

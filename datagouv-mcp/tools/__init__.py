@@ -3,6 +3,8 @@ from mcp.server.fastmcp import FastMCP
 from tools.download_and_parse_resource import (
     register_download_and_parse_resource_tool,
 )
+from tools.download_dataset_to_cache import register_download_dataset_to_cache_tool
+from tools.query_cache import register_query_cache_tool
 from tools.get_dataservice_info import register_get_dataservice_info_tool
 from tools.get_dataservice_openapi_spec import (
     register_get_dataservice_openapi_spec_tool,
@@ -40,3 +42,5 @@ def register_tools(mcp: FastMCP) -> None:
     register_get_resource_info_tool(mcp)
     register_download_and_parse_resource_tool(mcp)
     register_get_metrics_tool(mcp)
+    register_download_dataset_to_cache_tool(mcp)
+    register_query_cache_tool(mcp)
