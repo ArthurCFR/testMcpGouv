@@ -3,6 +3,7 @@
 import { UIMessage } from "ai";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import AgentTrace from "@/app/components/AgentTrace";
 import ResultCards from "@/app/components/ResultCards";
 import DataViz from "@/app/components/DataViz";
@@ -168,20 +169,7 @@ export default function ChatMessage({ message, isStreaming }: ChatMessageProps) 
         {/* Answer text */}
         {displayText && (
           <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed">
-            <ReactMarkdown>{displayText}</ReactMarkdown>
-          </div>
-        )}
-
-        {/* Streaming indicator when no text yet */}
-        {isStreaming && !answerText && (
-          <div className="flex gap-[3px] items-center h-5">
-            {[0, 150, 300].map((delay) => (
-              <span
-                key={delay}
-                className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce"
-                style={{ animationDelay: `${delay}ms` }}
-              />
-            ))}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
           </div>
         )}
 

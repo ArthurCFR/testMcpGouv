@@ -14,6 +14,9 @@ from tools.get_dvf_historique_commune import (
 from tools.get_logements_sociaux_commune import (
     register_get_logements_sociaux_commune_tool,
 )
+from tools.get_pyramide_ages_commune import (
+    register_get_pyramide_ages_commune_tool,
+)
 from tools.get_metrics import register_get_metrics_tool
 from tools.get_resource_info import register_get_resource_info_tool
 from tools.list_dataset_resources import register_list_dataset_resources_tool
@@ -32,6 +35,7 @@ def register_tools(mcp: FastMCP) -> None:
     register_get_dataset_info_tool(mcp)
     register_get_logements_sociaux_commune_tool(mcp)
     register_get_dvf_historique_commune_tool(mcp)
+    register_get_pyramide_ages_commune_tool(mcp)
     register_list_dataset_resources_tool(mcp)
     register_get_resource_info_tool(mcp)
     register_download_and_parse_resource_tool(mcp)

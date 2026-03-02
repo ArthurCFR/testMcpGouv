@@ -42,6 +42,14 @@ export interface CommuneAnalysis {
     taux_logements_sociaux_pct?: number | null;
     source?: string;
   };
+  pyramide_ages?: {
+    tranches?: Array<{
+      tranche: string;
+      femmes: number;
+      hommes: number;
+    }> | null;
+    source?: string;
+  } | null;
   meta: {
     nb_appels_mcp: number;
     donnees_manquantes: string[];

@@ -2,10 +2,11 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatInput from "@/app/components/ChatInput";
 import ChatMessage from "@/app/components/ChatMessage";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import DataQueryAnimation from "@/app/components/DataQueryAnimation";
 
 export default function Home() {
   const { messages, sendMessage, status, setMessages, error } = useChat({
@@ -14,6 +15,24 @@ export default function Home() {
 
   const isLoading = status === "submitted" || status === "streaming";
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ── Header overlay state machine ──────────────────────────────────────────
+  type OverlayState = "idle" | "active" | "done" | "out";
+  const [overlayState, setOverlayState] = useState<OverlayState>("idle");
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      hasLoadedRef.current = true;
+      setOverlayState("active");
+      return;
+    }
+    if (!hasLoadedRef.current) return;
+    setOverlayState("done");
+    const t1 = setTimeout(() => setOverlayState("out"),  1200);
+    const t2 = setTimeout(() => setOverlayState("idle"), 1700);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [isLoading]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -32,8 +51,15 @@ export default function Home() {
   return (
     <main className="flex flex-col h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors">
       {/* Header */}
-      <header className="shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <header className="shrink-0 relative border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+        <div
+          className="max-w-3xl mx-auto px-4 flex items-center justify-between"
+          style={{
+            paddingTop:    overlayState === "active" ? "28px" : "12px",
+            paddingBottom: overlayState === "active" ? "28px" : "12px",
+            transition: "padding-top 500ms ease, padding-bottom 500ms ease",
+          }}
+        >
           <div>
             <h1 className="text-base font-bold tracking-tight text-zinc-900 dark:text-white">
               Commune Agent
@@ -52,6 +78,34 @@ export default function Home() {
               </button>
             )}
             <ThemeToggle />
+          </div>
+        </div>
+
+        {/* ── Blue overlay during data fetching ── */}
+        <div
+          className={`absolute inset-0 z-10 bg-blue-600 flex items-center justify-center transition-opacity duration-500 ${
+            overlayState === "active" || overlayState === "done"
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* Animation while loading */}
+          <div className={`transition-opacity duration-300 ${overlayState === "active" ? "opacity-100" : "opacity-0"}`}>
+            <DataQueryAnimation light />
+          </div>
+
+          {/* "Analyse terminée" once done */}
+          <div
+            className={`absolute flex items-center gap-2.5 text-white transition-opacity duration-300 ${
+              overlayState === "done" || overlayState === "out" ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-sm font-medium tracking-wide">Analyse terminée</span>
           </div>
         </div>
       </header>
@@ -85,18 +139,6 @@ export default function Home() {
             );
           })}
 
-          {/* Typing indicator while waiting for first token */}
-          {isLoading && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
-            <div className="flex gap-[3px] items-center h-5 pl-1">
-              {[0, 150, 300].map((delay) => (
-                <span
-                  key={delay}
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Error */}
           {error && (

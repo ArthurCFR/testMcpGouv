@@ -3,6 +3,7 @@
 import { CommuneAnalysis } from "@/app/types";
 import MapCard from "./MapCard";
 import PriceChart from "./PriceChart";
+import AgeChart from "./AgeChart";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ function ThresholdBar({
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function ResultCards({ analysis }: { analysis: CommuneAnalysis }) {
-  const { commune, immobilier, population, logement, meta } = analysis;
+  const { commune, immobilier, population, logement, pyramide_ages, meta } = analysis;
 
   const hasImmo =
     immobilier.prix_median_m2_appt != null || immobilier.prix_median_m2_maison != null;
@@ -324,6 +325,26 @@ export default function ResultCards({ analysis }: { analysis: CommuneAnalysis })
           </div>
         )}
       </div>
+
+      {/* ── Pyramide des âges ──────────────────────────────────── */}
+      {pyramide_ages?.tranches && pyramide_ages.tranches.length >= 2 && (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/15 text-lg">
+                👥
+              </div>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-200">Pyramide des âges</span>
+            </div>
+            {pyramide_ages.source && (
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-full">
+                {pyramide_ages.source}
+              </span>
+            )}
+          </div>
+          <AgeChart data={pyramide_ages.tranches} />
+        </div>
+      )}
 
       {/* ── Meta strip ─────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-900/30 px-4 py-2.5">

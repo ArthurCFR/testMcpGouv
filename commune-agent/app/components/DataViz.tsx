@@ -172,7 +172,7 @@ function BarCard({ viz }: { viz: BarChartViz }) {
             labelFormatter={() => ""}
             cursor={{ fill: dark ? "#27272a" : "#f4f4f5" }}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={28}>
+          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={false}>
             {data.map((d, i) => (
               <Cell key={i} fill={barColor(d.value, hasNegatives)} />
             ))}
@@ -252,6 +252,7 @@ function LineCard({ viz }: { viz: LineChartViz }) {
               dot={{ r: 3, fill: PALETTE[i % PALETTE.length] }}
               activeDot={{ r: 5 }}
               connectNulls
+              isAnimationActive={false}
             />
           ))}
         </LineChart>
@@ -283,6 +284,7 @@ function PieCard({ viz }: { viz: PieChartViz }) {
               outerRadius={72}
               paddingAngle={2}
               strokeWidth={0}
+              isAnimationActive={false}
             >
               {viz.slices.map((_, i) => (
                 <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
