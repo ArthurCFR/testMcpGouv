@@ -1,0 +1,54 @@
+version: 2.1
+
+parameters:
+  python-version:
+    type: string
+    default: "3.13"
+
+jobs:
+  lint:
+    docker:
+      - image: ghcr.io/astral-sh/uv:python<< pipeline.parameters.python-version >>-trixie
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies and dev dependencies
+          command: uv sync --frozen
+      - run:
+          name: Lint and format code and sort imports
+          # ruff check --select I . : check linting and imports sorting without fixing (to fix, use --fix)
+          # ruff format --check . : check code formatting without fixing (to fix, remove --check)
+          command: |
+            uv run ruff check --select I .
+            uv run ruff format --check .
+      - run:
+          name: Type check
+          command: uv run ty check
+
+  test:
+    docker:
+      - image: ghcr.io/astral-sh/uv:python<< pipeline.parameters.python-version >>-trixie
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies and dev dependencies
+          command: uv sync --frozen
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            uv run pytest -v --junitxml=test-results/junit.xml
+      - store_test_results:
+          path: test-results
+
+workflows:
+  lint-test:
+    jobs:
+      - lint:
+          filters:
+            branches:
+              only: main
+      - test:
+          filters:
+            branches:
+              only: main

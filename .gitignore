@@ -1,0 +1,24 @@
+# Node
+commune-agent/node_modules/
+commune-agent/.next/
+commune-agent/.env.local
+commune-agent/.env*.local
+
+# Next.js build artifacts (root level)
+.next/
+
+# Claude Code local config
+.claude/
+
+# Python
+datagouv-mcp/__pycache__/
+datagouv-mcp/**/__pycache__/
+datagouv-mcp/.venv/
+datagouv-mcp/venv/
+datagouv-mcp/*.egg-info/
+datagouv-mcp/.pytest_cache/
+datagouv-mcp/**/*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
