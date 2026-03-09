@@ -1,5 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+function useDark(): boolean {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
+
 interface Tranche {
   tranche: string;
   femmes: number;
@@ -20,6 +34,7 @@ const TOP_PAD = 18; // room for column headers
 const BOTTOM_PAD = 4;
 
 export default function AgeChart({ data }: { data: Tranche[] }) {
+  const dark = useDark();
   const byTranche = Object.fromEntries(data.map((d) => [d.tranche, d]));
   const maxVal = Math.max(
     1,
@@ -70,7 +85,7 @@ export default function AgeChart({ data }: { data: Tranche[] }) {
         y1={TOP_PAD - 2}
         x2={LABEL_W + halfW}
         y2={TOP_PAD + n * BAR_H}
-        stroke="#3f3f46"
+        stroke={dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)"}
         strokeWidth={1}
       />
 
@@ -109,7 +124,9 @@ export default function AgeChart({ data }: { data: Tranche[] }) {
               y={y + BAR_H / 2 + 3.5}
               textAnchor="end"
               fontSize={isDecade ? 8.5 : 7}
-              fill={isDecade ? "#a1a1aa" : "#52525b"}
+              fill={isDecade
+                ? (dark ? "#94a3b8" : "#78716c")
+                : (dark ? "rgba(148,163,184,0.45)" : "rgba(120,113,108,0.55)")}
               fontWeight={isDecade ? "600" : "400"}
             >
               {t}

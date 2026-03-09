@@ -17,7 +17,20 @@ function fmt(n: number | null | undefined, decimals = 0): string {
 function SourceBadge({ source }: { source?: string }) {
   if (!source) return null;
   return (
-    <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-full truncate max-w-[120px]">
+    <span style={{
+      fontSize: 10,
+      color: "var(--c21-text-muted)",
+      fontFamily: "monospace",
+      background: "var(--c21-panel-bg)",
+      padding: "2px 8px",
+      borderRadius: "100px",
+      border: "1px solid var(--c21-border)",
+      maxWidth: 120,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      display: "inline-block",
+    }}>
       {source}
     </span>
   );
@@ -25,7 +38,14 @@ function SourceBadge({ source }: { source?: string }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600 font-semibold mb-1">
+    <p style={{
+      fontSize: 10,
+      textTransform: "uppercase",
+      letterSpacing: "0.1em",
+      color: "var(--c21-text-muted)",
+      fontWeight: 600,
+      marginBottom: 4,
+    }}>
       {children}
     </p>
   );
@@ -40,73 +60,58 @@ function BigNumber({
   unit?: string;
   size?: "lg" | "xl" | "2xl" | "4xl";
 }) {
-  const sizeClass =
-    size === "4xl"
-      ? "text-4xl"
-      : size === "2xl"
-      ? "text-2xl"
-      : size === "xl"
-      ? "text-xl"
-      : "text-lg";
+  const fontSize =
+    size === "4xl" ? "2.25rem"
+    : size === "2xl" ? "1.5rem"
+    : size === "xl"  ? "1.25rem"
+    : "1.125rem";
 
   if (value === null || value === undefined) {
-    return <span className="text-zinc-300 dark:text-zinc-700 text-xl">—</span>;
+    return <span style={{ color: "var(--c21-text-faint)", fontSize: "1.25rem" }}>—</span>;
   }
 
   return (
-    <span className={`${sizeClass} font-black text-zinc-900 dark:text-white tracking-tight`}>
+    <span style={{ fontSize, fontWeight: 900, color: "var(--c21-text)", letterSpacing: "-0.03em" }}>
       {typeof value === "number" ? fmt(value) : value}
-      {unit && <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500 ml-1">{unit}</span>}
+      {unit && (
+        <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--c21-text-muted)", marginLeft: 4 }}>
+          {unit}
+        </span>
+      )}
     </span>
   );
 }
 
 /** Horizontal bars comparing two values */
 function CompareBar({
-  labelA,
-  valueA,
-  labelB,
-  valueB,
-  colorA = "bg-sky-500",
-  colorB = "bg-indigo-400",
+  labelA, valueA,
+  labelB, valueB,
+  colorA = "#3b82f6",
+  colorB = "#d4af37",
   unit,
 }: {
-  labelA: string;
-  valueA?: number | null;
-  labelB: string;
-  valueB?: number | null;
-  colorA?: string;
-  colorB?: string;
+  labelA: string; valueA?: number | null;
+  labelB: string; valueB?: number | null;
+  colorA?: string; colorB?: string;
   unit?: string;
 }) {
   if (!valueA && !valueB) return null;
   const max = Math.max(valueA ?? 0, valueB ?? 0);
 
-  const Row = ({
-    label,
-    value,
-    color,
-  }: {
-    label: string;
-    value?: number | null;
-    color: string;
-  }) => (
+  const Row = ({ label, value, color }: { label: string; value?: number | null; color: string }) => (
     <div>
       <div className="flex justify-between items-baseline mb-1">
-        <span className="text-xs text-zinc-500 dark:text-zinc-500">{label}</span>
+        <span style={{ fontSize: "0.75rem", color: "var(--c21-text-muted)" }}>{label}</span>
         {value != null && (
-          <span className="text-sm font-bold text-zinc-900 dark:text-white">
+          <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--c21-text)" }}>
             {fmt(value)}
-            {unit && <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500 ml-0.5">{unit}</span>}
+            {unit && <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "var(--c21-text-muted)", marginLeft: 2 }}>{unit}</span>}
           </span>
         )}
       </div>
-      <div className="h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+      <div style={{ height: 6, background: "var(--c21-border)", borderRadius: 999, overflow: "hidden" }}>
         {value != null && (
-          <div
-            className={`h-full rounded-full ${color}`}
-            style={{ width: `${(value / max) * 100}%` }}
-          />
+          <div style={{ height: "100%", borderRadius: 999, background: color, width: `${(value / max) * 100}%` }} />
         )}
       </div>
     </div>
@@ -121,35 +126,26 @@ function CompareBar({
 }
 
 /** Progress bar with threshold marker */
-function ThresholdBar({
-  value,
-  threshold,
-  thresholdLabel,
-}: {
-  value: number;
-  threshold: number;
-  thresholdLabel: string;
+function ThresholdBar({ value, threshold, thresholdLabel }: {
+  value: number; threshold: number; thresholdLabel: string;
 }) {
   const isAbove = value >= threshold;
-  const fillColor = isAbove ? "bg-emerald-500" : "bg-amber-500";
+  const fillColor = isAbove ? "#22c55e" : "#f59e0b";
   const scale = Math.max(threshold * 1.5, 100);
   const fillPct = Math.min((value / scale) * 100, 100);
   const markerPct = Math.min((threshold / scale) * 100, 100);
 
   return (
     <div>
-      <div className="relative h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-visible">
-        <div
-          className={`absolute left-0 top-0 h-full rounded-full ${fillColor}`}
-          style={{ width: `${fillPct}%` }}
-        />
-        {/* Threshold marker */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-px h-3.5 bg-zinc-400/60 dark:bg-zinc-400/50 rounded"
-          style={{ left: `${markerPct}%` }}
-        />
+      <div style={{ position: "relative", height: 8, background: "var(--c21-border)", borderRadius: 999, overflow: "visible" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", borderRadius: 999, background: fillColor, width: `${fillPct}%` }} />
+        <div style={{
+          position: "absolute", top: "50%", transform: "translateY(-50%)",
+          width: 1, height: 14, background: "var(--c21-text-muted)",
+          opacity: 0.5, borderRadius: 1, left: `${markerPct}%`,
+        }} />
       </div>
-      <div className="flex justify-between text-[10px] mt-1.5 text-zinc-400 dark:text-zinc-600">
+      <div className="flex justify-between" style={{ fontSize: 10, marginTop: 6, color: "var(--c21-text-muted)" }}>
         <span>0 %</span>
         <span>{thresholdLabel}</span>
       </div>
@@ -157,9 +153,26 @@ function ThresholdBar({
   );
 }
 
+// Card wrapper
+function Card({ children, accent }: { children: React.ReactNode; accent?: string }) {
+  return (
+    <div style={{
+      borderRadius: 16,
+      border: "1px solid var(--c21-border)",
+      background: "var(--c21-card-bg)",
+      padding: "20px",
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+      ...(accent ? { borderLeft: `3px solid ${accent}` } : {}),
+    }}>
+      {children}
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function ResultCards({ analysis }: { analysis: CommuneAnalysis }) {
+export default function ResultCards({ analysis, hideMeta }: { analysis: CommuneAnalysis; hideMeta?: boolean }) {
   const { commune, immobilier, population, logement, pyramide_ages, meta } = analysis;
 
   const hasImmo =
@@ -169,36 +182,62 @@ export default function ResultCards({ analysis }: { analysis: CommuneAnalysis })
   return (
     <div className="space-y-3">
       {/* ── Hero : commune ─────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 py-5">
-        {/* Subtle gradient */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-50 dark:from-blue-950/25 via-transparent to-transparent" />
+      <div style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 16,
+        border: "1px solid var(--c21-border)",
+        background: "var(--c21-card-bg)",
+        padding: "20px 24px",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}>
+        {/* Subtle gold gradient */}
+        <div style={{
+          pointerEvents: "none",
+          position: "absolute", inset: 0,
+          background: "linear-gradient(135deg, rgba(212,175,55,0.06) 0%, transparent 50%)",
+        }} />
 
         <div className="relative space-y-4">
           {/* Name + badges */}
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+              <h2 style={{ fontSize: "1.875rem", fontWeight: 900, letterSpacing: "-0.03em", color: "var(--c21-text)" }}>
                 {commune.nom}
               </h2>
               {(commune.departement || commune.region) && (
-                <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-500">
+                <p style={{ marginTop: 2, fontSize: "0.875rem", color: "var(--c21-text-muted)" }}>
                   {[
                     commune.departement && `Dép. ${commune.departement}`,
                     commune.region,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  ].filter(Boolean).join(" · ")}
                 </p>
               )}
             </div>
             <div className="flex gap-2 flex-wrap">
               {commune.code_insee && (
-                <span className="rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 font-mono text-xs text-zinc-600 dark:text-zinc-300">
+                <span style={{
+                  borderRadius: 999,
+                  border: "1px solid var(--c21-border)",
+                  background: "var(--c21-panel-bg)",
+                  padding: "4px 12px",
+                  fontFamily: "monospace",
+                  fontSize: "0.75rem",
+                  color: "var(--c21-text-muted)",
+                }}>
                   {commune.code_insee}
                 </span>
               )}
               {population.grille_densite && (
-                <span className="rounded-full bg-zinc-100/80 dark:bg-zinc-800/60 px-3 py-1 text-xs italic text-zinc-500 dark:text-zinc-500">
+                <span style={{
+                  borderRadius: 999,
+                  background: "var(--c21-panel-bg)",
+                  padding: "4px 12px",
+                  fontSize: "0.75rem",
+                  fontStyle: "italic",
+                  color: "var(--c21-text-muted)",
+                }}>
                   {population.grille_densite}
                 </span>
               )}
@@ -207,7 +246,7 @@ export default function ResultCards({ analysis }: { analysis: CommuneAnalysis })
 
           {/* Population quick stats */}
           {(population.total || population.superficie_km2 || population.densite_hab_km2) && (
-            <div className="flex flex-wrap gap-6 border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
+            <div className="flex flex-wrap gap-6" style={{ borderTop: "1px solid var(--c21-border)", paddingTop: 16 }}>
               {population.total != null && (
                 <div>
                   <SectionLabel>Population</SectionLabel>
@@ -245,127 +284,145 @@ export default function ResultCards({ analysis }: { analysis: CommuneAnalysis })
       <div className={`grid gap-3 ${hasSRU ? "md:grid-cols-2" : "grid-cols-1"}`}>
         {/* Marché immobilier */}
         {hasImmo && (
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-500/15 text-lg">
-                  🏠
+          <Card accent="var(--c21-blue)">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    background: "rgba(59,130,246,0.12)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "1.1rem",
+                  }}>🏠</div>
+                  <span style={{ fontWeight: 600, color: "var(--c21-text)" }}>Marché immobilier</span>
                 </div>
-                <span className="font-semibold text-zinc-700 dark:text-zinc-200">Marché immobilier</span>
+                <SourceBadge source={immobilier.source} />
               </div>
-              <SourceBadge source={immobilier.source} />
+
+              <CompareBar
+                labelA="Appartements"
+                valueA={immobilier.prix_median_m2_appt}
+                labelB="Maisons"
+                valueB={immobilier.prix_median_m2_maison}
+                colorA="#3b82f6"
+                colorB="#d4af37"
+                unit="€/m²"
+              />
+
+              {immobilier.historique_prix && immobilier.historique_prix.length >= 2 && (
+                <div style={{ borderTop: "1px solid var(--c21-border)", paddingTop: 12 }}>
+                  <SectionLabel>Évolution prix m² (2014–2024)</SectionLabel>
+                  <PriceChart data={immobilier.historique_prix} />
+                </div>
+              )}
+
+              {(immobilier.nb_transactions_appt != null || immobilier.nb_transactions_maison != null) && (
+                <div className="grid grid-cols-2 gap-4" style={{ borderTop: "1px solid var(--c21-border)", paddingTop: 12 }}>
+                  <div>
+                    <SectionLabel>Ventes appt.</SectionLabel>
+                    <BigNumber value={immobilier.nb_transactions_appt} size="lg" />
+                  </div>
+                  <div>
+                    <SectionLabel>Ventes maisons</SectionLabel>
+                    <BigNumber value={immobilier.nb_transactions_maison} size="lg" />
+                  </div>
+                </div>
+              )}
             </div>
-
-            <CompareBar
-              labelA="Appartements"
-              valueA={immobilier.prix_median_m2_appt}
-              labelB="Maisons"
-              valueB={immobilier.prix_median_m2_maison}
-              colorA="bg-sky-500"
-              colorB="bg-indigo-400"
-              unit="€/m²"
-            />
-
-            {immobilier.historique_prix && immobilier.historique_prix.length >= 2 && (
-              <div className="border-t border-zinc-100 dark:border-zinc-800/50 pt-3">
-                <SectionLabel>Évolution prix m² (2014–2024)</SectionLabel>
-                <PriceChart data={immobilier.historique_prix} />
-              </div>
-            )}
-
-            {(immobilier.nb_transactions_appt != null ||
-              immobilier.nb_transactions_maison != null) && (
-              <div className="border-t border-zinc-100 dark:border-zinc-800/50 pt-3 grid grid-cols-2 gap-4">
-                <div>
-                  <SectionLabel>Ventes appt.</SectionLabel>
-                  <BigNumber value={immobilier.nb_transactions_appt} size="lg" />
-                </div>
-                <div>
-                  <SectionLabel>Ventes maisons</SectionLabel>
-                  <BigNumber value={immobilier.nb_transactions_maison} size="lg" />
-                </div>
-              </div>
-            )}
-          </div>
+          </Card>
         )}
 
         {/* Logements sociaux */}
         {hasSRU && (
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/15 text-lg">
-                  🏗️
+          <Card accent="var(--c21-gold)">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    background: "rgba(212,175,55,0.12)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "1.1rem",
+                  }}>🏗️</div>
+                  <span style={{ fontWeight: 600, color: "var(--c21-text)" }}>Logements sociaux</span>
                 </div>
-                <span className="font-semibold text-zinc-700 dark:text-zinc-200">Logements sociaux</span>
+                <SourceBadge source={logement?.source} />
               </div>
-              <SourceBadge source={logement?.source} />
-            </div>
 
-            <div>
-              <SectionLabel>Taux SRU</SectionLabel>
-              <BigNumber
+              <div>
+                <SectionLabel>Taux SRU</SectionLabel>
+                <BigNumber value={logement!.taux_logements_sociaux_pct!} unit="%" size="4xl" />
+              </div>
+
+              <ThresholdBar
                 value={logement!.taux_logements_sociaux_pct!}
-                unit="%"
-                size="4xl"
+                threshold={25}
+                thresholdLabel="Seuil légal 25 %"
               />
+
+              <p style={{ fontSize: 11, color: "var(--c21-text-muted)", fontStyle: "italic" }}>
+                {logement!.taux_logements_sociaux_pct! >= 25
+                  ? "✓ Conforme à l'obligation SRU"
+                  : "En dessous du seuil légal SRU (25 %)"}
+              </p>
             </div>
-
-            <ThresholdBar
-              value={logement!.taux_logements_sociaux_pct!}
-              threshold={25}
-              thresholdLabel="Seuil légal 25 %"
-            />
-
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-600 italic">
-              {logement!.taux_logements_sociaux_pct! >= 25
-                ? "✓ Conforme à l'obligation SRU"
-                : "En dessous du seuil légal SRU (25 %)"}
-            </p>
-          </div>
+          </Card>
         )}
       </div>
 
       {/* ── Pyramide des âges ──────────────────────────────────── */}
       {pyramide_ages?.tranches && pyramide_ages.tranches.length >= 2 && (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/15 text-lg">
-                👥
+        <Card>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  background: "rgba(168,85,247,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.1rem",
+                }}>👥</div>
+                <span style={{ fontWeight: 600, color: "var(--c21-text)" }}>Pyramide des âges</span>
               </div>
-              <span className="font-semibold text-zinc-700 dark:text-zinc-200">Pyramide des âges</span>
+              {pyramide_ages.source && <SourceBadge source={pyramide_ages.source} />}
             </div>
-            {pyramide_ages.source && (
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-full">
-                {pyramide_ages.source}
-              </span>
-            )}
+            <AgeChart data={pyramide_ages.tranches} />
           </div>
-          <AgeChart data={pyramide_ages.tranches} />
-        </div>
+        </Card>
       )}
 
       {/* ── Meta strip ─────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-900/30 px-4 py-2.5">
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-600">
-          <span className="text-zinc-600 dark:text-zinc-400 font-medium">{meta.nb_appels_mcp}</span> appels MCP
+      {!hideMeta && <div
+        data-pdf-skip=""
+        className="flex flex-wrap items-center gap-3 px-4 py-2.5"
+        style={{ borderRadius: 12, border: "1px solid var(--c21-border)", background: "var(--c21-panel-bg)" }}
+      >
+        <span style={{ fontSize: 11, color: "var(--c21-text-muted)" }}>
+          <span style={{ color: "var(--c21-text)", fontWeight: 500 }}>{meta.nb_appels_mcp}</span> appels MCP
         </span>
         {meta.donnees_manquantes.length > 0 && (
           <>
-            <span className="text-zinc-200 dark:text-zinc-800">·</span>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Données manquantes :</span>
+            <span style={{ color: "var(--c21-border)" }}>·</span>
+            <span style={{ fontSize: 11, color: "var(--c21-text-muted)" }}>Données manquantes :</span>
             {meta.donnees_manquantes.map((d) => (
               <span
                 key={d}
-                className="text-[10px] bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-500 dark:text-zinc-600 px-2 py-0.5 rounded-full font-mono"
+                style={{
+                  fontSize: 10,
+                  background: "var(--c21-panel-bg)",
+                  color: "var(--c21-text-muted)",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  fontFamily: "monospace",
+                  border: "1px solid var(--c21-border)",
+                }}
               >
                 {d}
               </span>
             ))}
           </>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

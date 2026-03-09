@@ -45,20 +45,25 @@ function CardWrapper({ title, children, caption }: {
   caption?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+    <div style={{
+      borderRadius: 12,
+      border: "1px solid var(--c21-border)",
+      background: "var(--c21-card-bg)",
+      overflow: "hidden",
+    }}>
       {title && (
-        <div className="px-5 pt-4 pb-3 border-b border-zinc-100 dark:border-zinc-800/50">
-          <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+        <div style={{ padding: "14px 20px 10px", borderBottom: "1px solid var(--c21-border)" }}>
+          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--c21-text)" }}>
             {title}
           </p>
         </div>
       )}
-      <div className={title ? "px-5 py-4" : "p-5"}>
+      <div style={{ padding: title ? "14px 20px" : "20px" }}>
         {children}
       </div>
       {caption && (
-        <div className="px-5 pb-4 border-t border-zinc-100 dark:border-zinc-800/50 pt-2">
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 italic">{caption}</p>
+        <div style={{ padding: "8px 20px 14px", borderTop: "1px solid var(--c21-border)" }}>
+          <p style={{ fontSize: 11, color: "var(--c21-text-muted)", fontStyle: "italic" }}>{caption}</p>
         </div>
       )}
     </div>
@@ -124,18 +129,21 @@ function TableCard({ viz }: { viz: TableViz }) {
 
 function BarCard({ viz }: { viz: BarChartViz }) {
   const dark = useDark();
-  const hasNegatives = viz.values.some((v) => v < 0);
+  const values = viz.values ?? [];
+  const labels = viz.labels ?? [];
+  const hasNegatives = values.some((v) => v < 0);
 
-  const data = viz.labels.map((label, i) => ({
+  const data = labels.map((label, i) => ({
     label: label.length > 14 ? label.slice(0, 13) + "…" : label,
     fullLabel: label,
-    value: viz.values[i] ?? 0,
+    value: values[i] ?? 0,
   }));
 
-  const tickColor = dark ? "#71717a" : "#a1a1aa";
-  const gridColor = dark ? "#27272a" : "#f4f4f5";
-  const tooltipBg = dark ? "#18181b" : "#ffffff";
-  const tooltipBorder = dark ? "#3f3f46" : "#e4e4e7";
+  const tickColor = dark ? "#94a3b8" : "#78716c";
+  const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+  const tooltipBg = dark ? "#1a1b1f" : "#ffffff";
+  const tooltipBorder = dark ? "rgba(212,175,55,0.25)" : "#e4e4e7";
+  const tooltipText = dark ? "#f8fafc" : "#1c1917";
 
   return (
     <CardWrapper title={viz.title}>
@@ -163,14 +171,14 @@ function BarCard({ viz }: { viz: BarChartViz }) {
               border: `1px solid ${tooltipBorder}`,
               borderRadius: 8,
               fontSize: 12,
-              color: dark ? "#e4e4e7" : "#3f3f46",
+              color: tooltipText,
             }}
             formatter={(value: number | undefined, _name: string | undefined, props: { payload?: { fullLabel: string } }) => [
               value != null ? `${value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}${viz.unit ? " " + viz.unit : ""}` : "—",
               props.payload?.fullLabel ?? "",
             ]}
             labelFormatter={() => ""}
-            cursor={{ fill: dark ? "#27272a" : "#f4f4f5" }}
+            cursor={{ fill: gridColor }}
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={false}>
             {data.map((d, i) => (
@@ -201,10 +209,11 @@ function LineCard({ viz }: { viz: LineChartViz }) {
     return row;
   });
 
-  const tickColor = dark ? "#71717a" : "#a1a1aa";
-  const gridColor = dark ? "#27272a" : "#f4f4f5";
-  const tooltipBg = dark ? "#18181b" : "#ffffff";
-  const tooltipBorder = dark ? "#3f3f46" : "#e4e4e7";
+  const tickColor = dark ? "#94a3b8" : "#78716c";
+  const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+  const tooltipBg = dark ? "#1a1b1f" : "#ffffff";
+  const tooltipBorder = dark ? "rgba(212,175,55,0.25)" : "#e4e4e7";
+  const tooltipText = dark ? "#f8fafc" : "#1c1917";
 
   return (
     <CardWrapper title={viz.title}>
@@ -232,7 +241,7 @@ function LineCard({ viz }: { viz: LineChartViz }) {
               border: `1px solid ${tooltipBorder}`,
               borderRadius: 8,
               fontSize: 12,
-              color: dark ? "#e4e4e7" : "#3f3f46",
+              color: tooltipText,
             }}
             formatter={(value: number | undefined, name: string | undefined) => [
               value != null ? `${value.toLocaleString("fr-FR", { maximumFractionDigits: 0 })}${viz.unit ? " " + viz.unit : ""}` : "—",
@@ -265,8 +274,9 @@ function LineCard({ viz }: { viz: LineChartViz }) {
 
 function PieCard({ viz }: { viz: PieChartViz }) {
   const dark = useDark();
-  const tooltipBg = dark ? "#18181b" : "#ffffff";
-  const tooltipBorder = dark ? "#3f3f46" : "#e4e4e7";
+  const tooltipBg = dark ? "#1a1b1f" : "#ffffff";
+  const tooltipBorder = dark ? "rgba(212,175,55,0.25)" : "#e4e4e7";
+  const tooltipText = dark ? "#f8fafc" : "#1c1917";
   const total = viz.slices.reduce((s, sl) => s + sl.value, 0);
 
   return (
@@ -296,7 +306,7 @@ function PieCard({ viz }: { viz: PieChartViz }) {
                 border: `1px solid ${tooltipBorder}`,
                 borderRadius: 8,
                 fontSize: 12,
-                color: dark ? "#e4e4e7" : "#3f3f46",
+                color: tooltipText,
               }}
               formatter={(value: number | undefined, name: string | undefined) => [
                 value != null ? `${value.toLocaleString("fr-FR")}${viz.unit ? " " + viz.unit : ""}` : "—",
@@ -314,12 +324,12 @@ function PieCard({ viz }: { viz: PieChartViz }) {
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ background: PALETTE[i % PALETTE.length] }}
                 />
-                <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">{sl.label}</span>
-                <span className="ml-auto text-sm font-semibold text-zinc-900 dark:text-white font-mono shrink-0">
+                <span className="truncate text-sm" style={{ color: "var(--c21-text)" }}>{sl.label}</span>
+                <span className="ml-auto text-sm font-semibold font-mono shrink-0" style={{ color: "var(--c21-text)" }}>
                   {sl.value.toLocaleString("fr-FR")}
-                  {viz.unit && <span className="text-xs font-normal text-zinc-400 ml-0.5">{viz.unit}</span>}
+                  {viz.unit && <span className="text-xs font-normal ml-0.5" style={{ color: "var(--c21-text-muted)" }}>{viz.unit}</span>}
                 </span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-600 font-mono shrink-0 w-14 text-right">
+                <span className="font-mono shrink-0 w-14 text-right text-xs" style={{ color: "var(--c21-text-muted)" }}>
                   {pct} %
                 </span>
               </div>
@@ -334,6 +344,7 @@ function PieCard({ viz }: { viz: PieChartViz }) {
 // ── Main dispatcher ───────────────────────────────────────────────────────────
 
 export default function DataViz({ viz }: { viz: VizData }) {
+  if (!viz?.type) return null;
   if (viz.type === "table") return <TableCard viz={viz} />;
   if (viz.type === "bar_chart") return <BarCard viz={viz} />;
   if (viz.type === "line_chart") return <LineCard viz={viz} />;

@@ -158,6 +158,91 @@ _DVF_DEP_RESOURCES = {
 
 ---
 
+## [BACKLOG] Nouveaux outils datasets — Immobilier & Qualité de vie
+
+Datasets potentiels à intégrer comme outils MCP. Chaque item cible un besoin utilisateur
+concret dans le contexte de l'analyse d'une commune (achat immobilier, déménagement, etc.).
+
+### 🏫 Qualité / proximité des écoles
+**Besoin** : les familles veulent savoir si les écoles proches sont de bonne qualité.
+**Sources à explorer** :
+- Annuaire de l'éducation (data.gouv.fr) — géolocalisation des établissements scolaires
+- Résultats du brevet / bac par établissement (DEPP)
+- Secteurs scolaires (carte scolaire) — rare et peu structuré en open data
+
+### 🚌 Transports & accessibilité
+**Besoin** : accessibilité en transports en commun, proximité gares/aéroports.
+**Sources à explorer** :
+- GTFS régionaux / nationaux (horaires TC) — trop volumineux pour usage direct
+- Base Nationale des Arrêts (BNA) — localisation des arrêts TC
+- Base permanente des équipements (BPE INSEE) : équipements de transport par commune
+
+### 🏗️ PLU / Urbanisme (zonage, droits à construire)
+**Besoin** : comprendre les zones constructibles, restrictions d'usage des sols.
+**Sources à explorer** :
+- Géoportail de l'Urbanisme (GPU) — WMS/WFS, pas vraiment CSV
+- GéoRisques (PPRN, zones inondables) — API disponible
+- Effort élevé : pas de dataset national unifié en CSV
+
+### ⚡ DPE — Diagnostic de Performance Énergétique
+**Besoin** : étiquettes énergie des logements (A à G), indicateur qualité du parc.
+**Sources** :
+- Dataset ADEME DPE logements existants (data.gouv.fr) — très volumineux, filtrable par commune
+- Colonnes clés : `code_insee_commune_actualise`, `etiquette_dpe`, `etiquette_ges`,
+  `surface_habitable_logement`, `annee_construction`, `type_batiment`
+- **Stratégie** : cache SQLite départemental (même approche que DVF par département)
+
+### 🛒 Commerces & services de proximité
+**Besoin** : présence de commerces, médecins, équipements culturels, sportifs, etc.
+**Sources** :
+- **Base Permanente des Équipements (BPE INSEE)** — par commune, très complet, format CSV
+  - Dataset data.gouv.fr dispo, filtrable par `DEPCOM` (code commune)
+  - Couvre : commerces, écoles, santé, sports, culture, services publics
+- **API OpenStreetMap/Overpass** — temps réel mais hors périmètre data.gouv.fr
+
+### 💼 Emploi & revenus
+**Besoin** : niveau de vie, taux de chômage, types d'emplois dominant la commune.
+**Sources** :
+- **Filosofi (INSEE)** — revenus, taux de pauvreté, niveau de vie médian par commune
+  - Disponible en CSV sur data.gouv.fr, filtrable par code commune
+- **RP INSEE** (Recensement de la Population) — catégories socioprofessionnelles, actifs/chômeurs
+- Données déjà partiellement couvertes par Filosofi IRIS (voir section IRIS)
+
+### 📈 Évolution démographique
+**Besoin** : tendances de population (croissance, vieillissement, solde migratoire).
+**Sources** :
+- **Recensement de la Population INSEE** — évolution pop. par commune, structure par âge
+  - Séries historiques disponibles (RP 1968 → 2021)
+  - Format CSV data.gouv.fr, code commune = clé de jointure
+- Indicateurs : pop_totale, variation_annuelle, part_60_plus, solde_naturel, solde_migratoire
+
+### 🔨 Permis de construire
+**Besoin** : activité de construction, dynamisme foncier, projets à venir.
+**Sources** :
+- **Sit@del2 (CGDD/SDES)** — base nationale des permis de construire accordés
+  - Données par commune : nb logements autorisés, commencés, terminés
+  - Disponible sur data.gouv.fr en CSV millésimé
+- Indicateur de dynamisme : commune en construction active vs. parc ancien figé
+
+### 🏢 Copropriétés
+**Besoin** : état du parc de copropriétés, présence de copros dégradées.
+**Sources** :
+- **Registre national des copropriétés (ANAH)** — data.gouv.fr
+  - Nb lots, année de construction, présence syndic, immatriculation
+  - Colonnes : `code_insee`, `nb_lots_total`, `periode_construction`, `syndicat`
+- Données de suivi des copropriétés fragiles/dégradées (PPPI)
+
+### 🏠 Loyers (encadrement & niveaux)
+**Besoin** : niveaux de loyers de marché, zones d'encadrement des loyers.
+**Sources** :
+- **CLAMEUR / OLAP** — observatoires privés, peu en open data
+- **Lovac / PPPI** — logements vacants, pas exactement les loyers
+- **Observatoire des loyers (OLAP)** — quelques données agrégées sur data.gouv.fr
+  - Maille agglomération/commune, loyers médians par type de bien
+- Zones d'encadrement des loyers : liste officielle via data.gouv.fr (non exhaustif)
+
+---
+
 ## [FEAT] Données IRIS / quartiers nommés
 
 **Problème** : les sections cadastrales n'ont pas de nom. Les vraies "quartiers" (IRIS INSEE,

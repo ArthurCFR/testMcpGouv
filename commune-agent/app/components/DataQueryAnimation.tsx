@@ -12,22 +12,22 @@ interface Props {
   light?: boolean;
   /** Static mode: show icons + line without any animation */
   frozen?: boolean;
+  /** Subtle mode: always show slow white dots (2× smaller, 4× slower) */
+  subtle?: boolean;
 }
 
-export default function DataQueryAnimation({ light = false, frozen = false }: Props) {
-  const iconCls = light
-    ? "bg-white/15 border-white/25"
-    : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700";
-
+export default function DataQueryAnimation({ light = false, frozen = false, subtle = false }: Props) {
   const dotRightColor = light ? "rgba(255,255,255,0.95)" : "#3b82f6";
   const dotLeftColor  = light ? "rgba(255,255,255,0.55)" : "#ef4444";
 
-  const lineGradient = light
+  const lineGradient = subtle
+    ? "linear-gradient(90deg,rgba(255,255,255,.25) 0%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.25) 100%)"
+    : light
     ? "linear-gradient(90deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.35) 100%)"
     : "linear-gradient(90deg,rgba(59,130,246,.3) 0%,rgba(161,161,170,.2) 50%,rgba(239,68,68,.3) 100%)";
 
-  const glowA = frozen ? undefined : light ? "dg-glow-white-a 2.2s ease-in-out infinite"       : "dg-glow-blue 2.2s ease-in-out infinite";
-  const glowB = frozen ? undefined : light ? "dg-glow-white-b 2.2s ease-in-out 0.55s infinite" : "dg-glow-red 2.2s ease-in-out 0.55s infinite";
+  const pulseColorA = light ? "rgba(255,255,255,0.5)"  : "rgba(59,130,246,0.45)";
+  const pulseColorB = light ? "rgba(255,255,255,0.35)" : "rgba(239,68,68,0.45)";
 
   const labelCls = light
     ? "text-white/55"
@@ -48,21 +48,9 @@ export default function DataQueryAnimation({ light = false, frozen = false }: Pr
           92%  {               opacity: 1; }
           100% { left: 0px;    opacity: 0; }
         }
-        @keyframes dg-glow-blue {
-          0%,100% { box-shadow: 0 0 0 0   rgba(59,130,246,0); }
-          50%     { box-shadow: 0 0 0 3px rgba(59,130,246,0.18), 0 0 14px rgba(59,130,246,0.1); }
-        }
-        @keyframes dg-glow-red {
-          0%,100% { box-shadow: 0 0 0 0   rgba(239,68,68,0); }
-          50%     { box-shadow: 0 0 0 3px rgba(239,68,68,0.18), 0 0 14px rgba(239,68,68,0.1); }
-        }
-        @keyframes dg-glow-white-a {
-          0%,100% { box-shadow: 0 0 0 0   rgba(255,255,255,0); }
-          50%     { box-shadow: 0 0 0 3px rgba(255,255,255,0.22), 0 0 14px rgba(255,255,255,0.12); }
-        }
-        @keyframes dg-glow-white-b {
-          0%,100% { box-shadow: 0 0 0 0   rgba(255,255,255,0); }
-          50%     { box-shadow: 0 0 0 3px rgba(255,255,255,0.16), 0 0 14px rgba(255,255,255,0.08); }
+        @keyframes dg-pulse {
+          0%, 100% { transform: scale(0.82); opacity: 0.55; }
+          50%      { transform: scale(1.38); opacity: 0.12; }
         }
       `}</style>
 
@@ -70,11 +58,16 @@ export default function DataQueryAnimation({ light = false, frozen = false }: Pr
         <div className="flex items-center gap-3">
 
           {/* Agent IA icon */}
-          <div
-            className={`w-9 h-9 rounded-xl overflow-hidden border flex items-center justify-center p-0.5 shrink-0 ${iconCls}`}
-            style={{ animation: glowA }}
-          >
-            <Image src={agentIAIcon} alt="Agent IA" width={30} height={30} className="object-contain" />
+          <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
+            {!frozen && !subtle && (
+              <div style={{
+                position: "absolute", inset: 0,
+                borderRadius: "50%",
+                background: pulseColorA,
+                animation: "dg-pulse 2.2s ease-in-out infinite",
+              }} />
+            )}
+            <Image src={agentIAIcon} alt="Agent IA" width={30} height={30} className="object-contain relative z-10" />
           </div>
 
           {/* Flow channel */}
@@ -83,7 +76,9 @@ export default function DataQueryAnimation({ light = false, frozen = false }: Pr
               className="absolute inset-x-0"
               style={{ top: "50%", height: 1, marginTop: -0.5, background: lineGradient }}
             />
-            {!frozen && ([0, -0.6, -1.2] as number[]).map((delay, i) => (
+
+            {/* Normal dots (active search) */}
+            {!frozen && !subtle && ([0, -0.6, -1.2] as number[]).map((delay, i) => (
               <span
                 key={`r${i}`}
                 className="absolute rounded-full"
@@ -95,7 +90,7 @@ export default function DataQueryAnimation({ light = false, frozen = false }: Pr
                 }}
               />
             ))}
-            {!frozen && ([-0.3, -0.9, -1.5] as number[]).map((delay, i) => (
+            {!frozen && !subtle && ([-0.3, -0.9, -1.5] as number[]).map((delay, i) => (
               <span
                 key={`l${i}`}
                 className="absolute rounded-full"
@@ -107,18 +102,32 @@ export default function DataQueryAnimation({ light = false, frozen = false }: Pr
                 }}
               />
             ))}
+
+            {/* Subtle dots (static, white, normal size) */}
+            {subtle && ([18, 56, 94] as number[]).map((left, i) => (
+              <span
+                key={`sr${i}`}
+                className="absolute rounded-full"
+                style={{ width: 6, height: 6, top: "50%", marginTop: -3, left, background: "white" }}
+              />
+            ))}
           </div>
 
           {/* Marianne / data.gouv icon */}
-          <div
-            className={`w-9 h-9 rounded-xl overflow-hidden border flex items-center justify-center p-0.5 shrink-0 ${iconCls}`}
-            style={{ animation: glowB }}
-          >
-            <Image src={dataGouvIcon} alt="data.gouv" width={30} height={30} className="object-contain" />
+          <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
+            {!frozen && !subtle && (
+              <div style={{
+                position: "absolute", inset: 0,
+                borderRadius: "50%",
+                background: pulseColorB,
+                animation: "dg-pulse 2.2s ease-in-out 0.55s infinite",
+              }} />
+            )}
+            <Image src={dataGouvIcon} alt="data.gouv" width={30} height={30} className="object-contain relative z-10" />
           </div>
         </div>
 
-        {!frozen && (
+        {!frozen && !subtle && (
           <p className={`text-[10px] tracking-wide pl-0.5 ${labelCls}`}>
             Consultation data.gouv…
           </p>

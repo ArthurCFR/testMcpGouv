@@ -1,6 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+function useDark(): boolean {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return dark;
+}
 
 interface DataPoint {
   annee: number;
@@ -14,6 +26,7 @@ interface PriceChartProps {
 
 export default function PriceChart({ data }: PriceChartProps) {
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+  const dark = useDark();
 
   if (!data || data.length < 2) return null;
 
@@ -82,26 +95,30 @@ export default function PriceChart({ data }: PriceChartProps) {
     let ty = cy - TOOLTIP_H - 8;
     if (ty < padT - 4) ty = cy + 10;
 
+    const ttBg   = dark ? "#1a1b1f" : "#ffffff";
+    const ttBdr  = dark ? "rgba(212,175,55,0.3)" : "#e4e4e7";
+    const ttHead = "#d4af37";
+    const ttMain = dark ? "#f8fafc" : "#1c1917";
+    const ttSub  = dark ? "rgba(248,250,252,0.45)" : "rgba(28,25,23,0.45)";
+
     tooltipEl = (
       <g style={{ pointerEvents: "none" }}>
         <rect
-          x={tx}
-          y={ty}
-          width={TOOLTIP_W}
-          height={TOOLTIP_H}
+          x={tx} y={ty}
+          width={TOOLTIP_W} height={TOOLTIP_H}
           rx="5"
-          fill="rgb(24,24,27)"
-          stroke="rgba(56,189,248,0.3)"
+          fill={ttBg}
+          stroke={ttBdr}
           strokeWidth="1"
         />
-        <text x={tx + 10} y={ty + 16} fontSize="10" fontWeight="700" fill="rgb(56,189,248)">
+        <text x={tx + 10} y={ty + 16} fontSize="10" fontWeight="700" fill={ttHead}>
           {hoveredPt.annee}
         </text>
-        <text x={tx + 10} y={ty + 30} fontSize="10" fill="rgba(255,255,255,0.85)">
+        <text x={tx + 10} y={ty + 30} fontSize="10" fill={ttMain}>
           {fmt(hoveredPt.prix_m2)} €/m²
         </text>
         {hasNb && (
-          <text x={tx + 10} y={ty + 43} fontSize="9" fill="rgba(255,255,255,0.4)">
+          <text x={tx + 10} y={ty + 43} fontSize="9" fill={ttSub}>
             {fmt(hoveredPt.nb_mutations!)} ventes
           </text>
         )}

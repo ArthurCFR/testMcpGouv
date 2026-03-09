@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 function useDark(): boolean {
   const [dark, setDark] = useState(false);

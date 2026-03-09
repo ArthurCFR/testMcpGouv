@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commune Agent - Century 21</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --c21-gold: #d4af37;
+            --c21-gold-glow: rgba(212, 175, 55, 0.4);
+            --tech-blue: #3b82f6;
+            --bg-dark: #0f1115;
+            --bg-panel: rgba(255, 255, 255, 0.03);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Effet de fond avec des halos lumineux subtils */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, var(--c21-gold-glow), transparent 25%);
+        }
+
+        /* --- HEADER GLASSMORPHISM --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            background: rgba(15, 17, 21, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            animation: slideDown 0.8s ease-out;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header-left i {
+            color: var(--c21-gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .header-left i:hover { transform: scale(1.1); }
+
+        .subtitle-badge {
+            font-size: 0.75rem;
+            background: var(--bg-panel);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 400;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .c21-logo { color: var(--text-main); }
+        .c21-logo span { color: var(--c21-gold); }
+
+        /* --- CONTENU CENTRAL --- */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* L'icône IA animée */
+        .ai-logo-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 2rem;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .ai-logo {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--c21-gold), var(--tech-blue));
+            border-radius: 30%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            color: white;
+            box-shadow: 0 0 30px var(--c21-gold-glow);
+            z-index: 2;
+            position: relative;
+        }
+
+        /* Effet de pulsation derrière le logo */
+        .ai-logo-container::before {
+            content: '';
+            position: absolute;
+            top: -10%; left: -10%; right: -10%; bottom: -10%;
+            background: radial-gradient(circle, var(--c21-gold-glow), transparent 70%);
+            z-index: 1;
+            animation: pulse 3s infinite alternate;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.3;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff, var(--c21-gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .description {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            line-height: 1.6;
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        /* --- ZONE DE RECHERCHE --- */
+        .search-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 3rem auto;
+            position: relative;
+            animation: fadeInUp 1.4s ease-out;
+        }
+
+        .search-box {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 100px;
+            padding: 0.5rem 0.5rem 0.5rem 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .search-box:focus-within {
+            border-color: var(--c21-gold);
+            box-shadow: 0 0 20px var(--c21-gold-glow);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            background: var(--c21-gold);
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--c21-gold);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <i class="fa-solid fa-bars"></i>
+            <span>Commune Agent</span>
+            <span class="subtitle-badge">
+                <i class="fa-solid fa-database" style="color: var(--tech-blue); font-size: 0.8rem; margin-right: 5px;"></i>
+                Data.gouv.fr
+            </span>
+        </div>
+        <div class="header-right">
+            <div class="c21-logo">CENTURY <span>21</span></div>
+            <i class="fa-solid fa-moon" style="color: var(--text-muted); cursor: pointer;"></i>
+        </div>
+    </header>
+
+    <main>
+        <div class="ai-logo-container">
+            <div class="ai-logo">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+        </div>
+        
+        <h1>Expertise locale augmentée.</h1>
+        <p class="description">
+            Posez votre question sur les communes françaises. <br>
+            Population, dynamisme immobilier, logements sociaux — explorez les données officielles via l'IA.
+        </p>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" placeholder="Ex: Quel est le prix moyen au m² et la part de logements sociaux à Bordeaux ?">
+                <button class="send-btn">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

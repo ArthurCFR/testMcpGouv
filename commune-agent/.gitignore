@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local GTFS index (rebuilt by npm run ingest-stops)
+/data/*.db

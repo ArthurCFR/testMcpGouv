@@ -1,13 +1,128 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens ───────────────────────────────────────────────── */
+:root {
+  /* Brand constants */
+  --c21-gold:      #d4af37;
+  --c21-gold-glow: rgba(212, 175, 55, 0.35);
+  --c21-blue:      #3b82f6;
+
+  /* Light mode */
+  --c21-bg:              #f5f3ee;
+  --c21-bg-gradient-a:   rgba(59, 130, 246, 0.05);
+  --c21-bg-gradient-b:   rgba(212, 175, 55, 0.10);
+  --c21-header-bg:       rgba(245, 243, 238, 0.88);
+  --c21-panel-bg:        rgba(255, 255, 255, 0.70);
+  --c21-sidebar-bg:      rgba(250, 249, 246, 0.98);
+  --c21-card-bg:         rgba(255, 255, 255, 0.90);
+  --c21-input-bg:        rgba(0, 0, 0, 0.04);
+  --c21-border:          rgba(0, 0, 0, 0.09);
+  --c21-text:            #1c1917;
+  --c21-text-muted:      #78716c;
+  --c21-text-faint:      rgba(120, 113, 108, 0.45);
+  --c21-scrollfade-to:   #f5f3ee;
+}
+
+.dark {
+  /* Dark mode */
+  --c21-bg:              #0f1115;
+  --c21-bg-gradient-a:   rgba(59, 130, 246, 0.08);
+  --c21-bg-gradient-b:   rgba(212, 175, 55, 0.15);
+  --c21-header-bg:       rgba(15, 17, 21, 0.75);
+  --c21-panel-bg:        rgba(255, 255, 255, 0.03);
+  --c21-sidebar-bg:      rgba(10, 11, 14, 0.97);
+  --c21-card-bg:         rgba(255, 255, 255, 0.03);
+  --c21-input-bg:        rgba(255, 255, 255, 0.05);
+  --c21-border:          rgba(255, 255, 255, 0.07);
+  --c21-text:            #f8fafc;
+  --c21-text-muted:      #94a3b8;
+  --c21-text-faint:      rgba(148, 163, 184, 0.40);
+  --c21-scrollfade-to:   #0f1115;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--c21-bg);
+  color: var(--c21-text);
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }
+
+/* ── C21 animations ──────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-15px); }
+}
+@keyframes c21-pulse {
+  0%   { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Prose overrides ─────────────────────────────────────────────── */
+.c21-prose { color: var(--c21-text); }
+.c21-prose h1, .c21-prose h2, .c21-prose h3, .c21-prose h4 { color: var(--c21-text); }
+.c21-prose strong { color: var(--c21-text); }
+.c21-prose a { color: var(--c21-gold); }
+.c21-prose code {
+  color: var(--c21-gold);
+  background: rgba(212,175,55,0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+.c21-prose pre   { background: var(--c21-panel-bg); border: 1px solid var(--c21-border); }
+.c21-prose blockquote { border-left-color: var(--c21-gold-glow); color: var(--c21-text-muted); }
+.c21-prose hr    { border-color: var(--c21-border); }
+.c21-prose th    { color: var(--c21-text); }
+.c21-prose td    { color: var(--c21-text-muted); }
+.c21-prose li::marker { color: var(--c21-text-muted); }
+.c21-prose table { border-color: var(--c21-border); }
+
+/* ── Accessibility map tooltips ──────────────────────────────────────────── */
+.acc-tooltip {
+  background: var(--c21-sidebar-bg) !important;
+  border: 1px solid var(--c21-border) !important;
+  color: var(--c21-text) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  padding: 5px 9px !important;
+  border-radius: 7px !important;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18) !important;
+  white-space: nowrap !important;
+  line-height: 1.5 !important;
+}
+.acc-tooltip::before { display: none !important; }
+.acc-tooltip strong { color: var(--c21-text) !important; font-weight: 600 !important; }
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Icon button ─────────────────────────────────────────────────────────── */
+.c21-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+.c21-icon-btn:hover { color: var(--c21-text) !important; }

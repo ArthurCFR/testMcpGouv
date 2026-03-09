@@ -10,6 +10,7 @@ interface ChatInputProps {
 export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -30,41 +31,93 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    // Auto-resize up to ~5 lines
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   };
 
+  const active = Boolean(value.trim()) && !isLoading;
+  const lit = focused || Boolean(value);
+
   return (
-    <div className="flex gap-2 items-end">
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        background: "var(--c21-input-bg)",
+        border: lit
+          ? "1px solid var(--c21-gold)"
+          : "1px solid rgba(212, 175, 55, 0.2)",
+        borderRadius: "18px",
+        padding: "0.45rem 0.45rem 0.45rem 1.25rem",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        boxShadow: lit
+          ? "0 0 18px var(--c21-gold-glow), 0 8px 24px rgba(0,0,0,0.12)"
+          : "0 6px 20px rgba(0,0,0,0.08)",
+        transition: "box-shadow 0.3s ease, border-color 0.3s ease",
+      }}
+    >
       <textarea
         ref={textareaRef}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder="Posez votre question sur les communes françaises…"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="Ex : Prix moyen au m² et logements sociaux à Bordeaux ?"
         rows={1}
         disabled={isLoading}
-        className="flex-1 resize-none overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700
-          rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-          transition-colors leading-relaxed"
-        style={{ minHeight: "48px", maxHeight: "140px" }}
+        style={{
+          flex: 1,
+          background: "transparent",
+          border: "none",
+          outline: "none",
+          color: "var(--c21-text)",
+          fontSize: "1rem",
+          resize: "none",
+          overflowY: "auto",
+          lineHeight: 1.6,
+          minHeight: "38px",
+          maxHeight: "140px",
+          fontFamily: "inherit",
+          paddingTop: "0.35rem",
+          paddingBottom: "0.35rem",
+        }}
+        className="placeholder:text-[color:var(--c21-text-muted)]"
       />
+
       <button
         onClick={handleSend}
-        disabled={!value.trim() || isLoading}
-        className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl
-          bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-200 dark:disabled:bg-zinc-700
-          text-white disabled:text-zinc-400 dark:disabled:text-zinc-500
-          transition-colors"
+        disabled={!active}
+        style={{
+          flexShrink: 0,
+          alignSelf: "flex-end",
+          marginBottom: "0.1rem",
+          width: 38,
+          height: 38,
+          borderRadius: "12px",
+          border: "none",
+          background: active ? "var(--c21-gold)" : "rgba(212,175,55,0.18)",
+          color: active ? "#000" : "var(--c21-text-muted)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: active ? "pointer" : "default",
+          transition: "all 0.3s ease",
+          boxShadow: active ? "0 0 12px var(--c21-gold-glow)" : "none",
+        }}
         aria-label="Envoyer"
       >
         {isLoading ? (
-          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <svg
+            style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         ) : (
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
