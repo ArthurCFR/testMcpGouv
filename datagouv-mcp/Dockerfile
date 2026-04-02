@@ -1,4 +1,4 @@
-FROM astral/uv:python3.14-trixie-slim
+FROM astral/uv:python3.14-trixie-slim@sha256:479708d509db76335f36d87b68ff8d781b6f7ef7b0495889eca96e1f5de7b1bb
 
 # Install needed apt packages
 RUN apt-get update -y && \

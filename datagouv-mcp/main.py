@@ -12,8 +12,13 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from helpers.accessibility_api import handle_accessibility_request
+from helpers.http import patch_httpx_ipv4
 from helpers.matomo import track_matomo
 from tools import register_tools
+
+# Force IPv4 for all httpx clients — some gov APIs are IPv4-only and
+# Python 3.14 Happy Eyeballs on Railway may try IPv6 first and fail.
+patch_httpx_ipv4()
 
 # Configure logging
 LOGGER_NAME = "datagouv_mcp"
