@@ -52,6 +52,7 @@ function computeZoom(lat: number, mapSizePx: number, frameKm: number): number {
 
 // ── Bounds helpers ─────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function frameBounds(centerLat: number, centerLng: number, frameKm: number): {
   minLat: number; maxLat: number; minLng: number; maxLng: number;
 } {

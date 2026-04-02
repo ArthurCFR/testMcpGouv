@@ -166,6 +166,7 @@ function navitiaToTransitType(modeId: string, modeName: string): TransitType | n
   return null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function fetchCandidatesPrim(lat: number, lng: number): Promise<Map<string, Candidate>> {
   const candidateMap = new Map<string, Candidate>();
   const PRIM_KEY = process.env.PRIM_API_KEY ?? "";

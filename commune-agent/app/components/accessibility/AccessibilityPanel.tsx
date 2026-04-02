@@ -369,7 +369,6 @@ export default function AccessibilityPanel({ data, phase }: Props) {
             {/* Metro / tram / RER grouped by line */}
             {lineSections.map(({ line, type, stops }) => {
               const color = getLineColor(type, line);
-              const textColor = getContrastText(color);
               return (
                 <div key={`${type}::${line}`}>
                   <div
