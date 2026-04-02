@@ -35,6 +35,7 @@ from tools.query_resource_data import register_query_resource_data_tool
 from tools.resolve_commune import register_resolve_commune_tool
 from tools.search_dataservices import register_search_dataservices_tool
 from tools.search_datasets import register_search_datasets_tool
+from tools.get_accessibility_snapshot import register_get_accessibility_snapshot_tool
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -62,3 +63,4 @@ def register_tools(mcp: FastMCP) -> None:
     register_get_metrics_tool(mcp)
     register_download_dataset_to_cache_tool(mcp)
     register_query_cache_tool(mcp)
+    register_get_accessibility_snapshot_tool(mcp)

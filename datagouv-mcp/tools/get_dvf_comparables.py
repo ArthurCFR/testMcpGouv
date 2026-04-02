@@ -29,6 +29,7 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
         surface_tolerance_pct: float = 20.0,
         max_results: int = 10,
         date_min: str | None = None,
+        adresse_rue: str | None = None,
     ) -> str:
         """
         Get individual DVF real estate transactions for a commune, filtered by property type
@@ -51,6 +52,10 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
             date_min: Optional ISO date string (e.g. "2020-01-01") to exclude transactions
                       before this date. Use to focus on recent comparable sales only and
                       avoid diluting the analysis with pre-Covid or very old data.
+            adresse_rue: Optional street name (e.g. "RUE DE LA PAIX"). When provided,
+                         any matching transaction from 2024+ on this same street is
+                         GUARANTEED to appear in results, even beyond max_results.
+                         This ensures hyper-local recent comparables are never missed.
         """
         code_commune = code_commune.strip()
         if not code_commune:
@@ -91,19 +96,24 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
         try:
             async with httpx.AsyncClient(timeout=30.0) as session:
                 all_rows, _ = await _fetch_all_rows(resource_id, code_commune, session)
-        except tabular_api_client.ResourceNotAvailableError:
-            logger.info(
-                "Tabular API unavailable for dept %s, falling back to SQLite cache", dept
-            )
+        except Exception as tabular_err:  # noqa: BLE001
+            is_404 = isinstance(tabular_err, tabular_api_client.ResourceNotAvailableError)
+            if is_404:
+                logger.info(
+                    "Tabular API 404 for dept %s, falling back to SQLite cache", dept
+                )
+            else:
+                logger.warning(
+                    "Tabular API error for dept %s (%s), falling back to SQLite cache",
+                    dept, tabular_err,
+                )
             try:
                 await _ensure_dept_cached(resource_id)
                 all_rows, _ = _fetch_rows_from_cache(resource_id, code_commune)
-            except Exception as e:  # noqa: BLE001
+            except Exception as cache_err:  # noqa: BLE001
                 logger.exception("Cache fallback failed for dept %s", dept)
-                return f"❌ Données DVF indisponibles pour le département {dept} (Tabular API 404, cache échoué : {e})"
-        except Exception as e:  # noqa: BLE001
-            logger.exception("Error fetching DVF comparables for %s", code_commune)
-            return f"❌ Erreur lors de la récupération des données : {e}"
+                reason = "Tabular API 404" if is_404 else f"Tabular API : {tabular_err}"
+                return f"❌ Données DVF indisponibles pour le département {dept} ({reason}, cache échoué : {cache_err})"
 
         # --- Fetch 2023+ from national DGFiP files ---
         try:
@@ -134,7 +144,7 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
         for row in all_rows:
             if row.get("logement") not in ("True", True, "true", 1, "1"):
                 continue
-            if (row.get("type_local") or "").strip().lower() != type_local_norm.lower():
+            if str(row.get("type_local") or "").strip().lower() != type_local_norm.lower():
                 continue
             try:
                 surface = float(row.get("surface_reelle_bati") or 0)
@@ -146,14 +156,14 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
             if not (surface_min <= surface <= surface_max):
                 continue
 
-            date_str = (row.get("date_mutation") or "").strip()
+            date_str = str(row.get("date_mutation") or "").strip()
             if date_min and date_str and date_str < date_min:
                 continue
             matching.append({
                 "date_mutation": date_str,
-                "adresse": (row.get("adresse_numero") or "").strip()
+                "adresse": str(row.get("adresse_numero") or "").strip()
                 + " "
-                + (row.get("adresse_nom_voie") or "").strip(),
+                + str(row.get("adresse_nom_voie") or "").strip(),
                 "surface_m2": round(surface, 1),
                 "prix_total": round(valeur),
                 "prix_m2": round(valeur / surface),
@@ -187,13 +197,70 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
                 if nb_iqr_excluded > 0:
                     matching = filtered
 
+        # --- Compute aggregate stats on ALL matching transactions (post-IQR) ---
+        all_prices = sorted(t["prix_m2"] for t in matching)
+        n_all = len(all_prices)
+        stats_prix_m2 = {
+            "nb_transactions": n_all,
+            "min": all_prices[0],
+            "max": all_prices[-1],
+            "mediane": all_prices[n_all // 2] if n_all % 2 == 1 else round((all_prices[n_all // 2 - 1] + all_prices[n_all // 2]) / 2),
+            "q1": all_prices[n_all // 4],
+            "q3": all_prices[(3 * n_all) // 4],
+        }
+        stats_prix_m2["fourchette_marche"] = f"{stats_prix_m2['q1']} – {stats_prix_m2['q3']} €/m²"
+
+        # --- Flag remaining soft outliers (post-IQR) ---
+        # After hard IQR exclusion, flag transactions that are still notably
+        # off-market using a tighter band (Q1 − 0.5·IQR / Q3 + 0.5·IQR).
+        # These passed the 1.5·IQR filter but remain suspicious.
+        nb_flagged = 0
+        if len(matching) >= 4:
+            flag_prices = sorted(t["prix_m2"] for t in matching)
+            fn = len(flag_prices)
+            fq1 = flag_prices[fn // 4]
+            fq3 = flag_prices[(3 * fn) // 4]
+            fiqr = fq3 - fq1
+            if fiqr > 0:
+                soft_lower = fq1 - 0.5 * fiqr
+                soft_upper = fq3 + 0.5 * fiqr
+                for t in matching:
+                    if t["prix_m2"] < soft_lower:
+                        t["outlier"] = "low"
+                        nb_flagged += 1
+                    elif t["prix_m2"] > soft_upper:
+                        t["outlier"] = "high"
+                        nb_flagged += 1
+
         # --- Sort by date descending, take top N ---
         matching.sort(key=lambda x: x["date_mutation"], reverse=True)
         nb_matching = len(matching)
         dates = [t["date_mutation"] for t in matching if t["date_mutation"]]
         date_derniere = dates[0] if dates else "inconnue"
         date_premiere = dates[-1] if dates else "inconnue"
-        top = matching[:max_results]
+
+        # --- Force same-street 2024+ transactions into results ---
+        # When adresse_rue is provided, any 2024+ transaction on that street
+        # is guaranteed to appear, even if max_results would cut it.
+        rue_norm = (adresse_rue or "").strip().upper()
+        same_street_forced = []
+        rest = []
+        if rue_norm:
+            for t in matching:
+                t_rue = t["adresse"].upper()
+                # Match street name (ignore house number at start)
+                if rue_norm in t_rue and t["date_mutation"] >= "2024-01-01":
+                    t["same_street"] = True
+                    same_street_forced.append(t)
+                else:
+                    rest.append(t)
+            # Fill remaining slots with non-forced transactions
+            remaining_slots = max(max_results - len(same_street_forced), 0)
+            top = same_street_forced + rest[:remaining_slots]
+            # Re-sort the combined list by date
+            top.sort(key=lambda x: x["date_mutation"], reverse=True)
+        else:
+            top = matching[:max_results]
 
         # --- Format output ---
         periode_label = f"{date_min} → 2025" if date_min else "2014–2025"
@@ -207,20 +274,37 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
             + (f" ({nb_iqr_excluded} atypiques exclues par IQR)" if nb_iqr_excluded > 0 else ""),
             f"Période couverte : {date_premiere} → {date_derniere}",
             f"Dernière vente connue : {date_derniere}",
-            f"Résultats affichés : {len(top)} (les plus récents)",
+            "",
+            f"📊 Statistiques de prix (sur les {nb_matching} transactions filtrées) :",
+            f"   Médiane : {stats_prix_m2['mediane']:,} €/m²".replace(",", " "),
+            f"   Q1 (25e centile) : {stats_prix_m2['q1']:,} €/m²".replace(",", " "),
+            f"   Q3 (75e centile) : {stats_prix_m2['q3']:,} €/m²".replace(",", " "),
+            f"   Fourchette de marché (Q1–Q3) : {stats_prix_m2['fourchette_marche']}",
+            f"   Min : {stats_prix_m2['min']:,} €/m²  |  Max : {stats_prix_m2['max']:,} €/m²".replace(",", " "),
+            "",
+            f"Résultats affichés : {len(top)} (les plus récents)"
+            + (f" (dont {len(same_street_forced)} même rue 2024+)" if same_street_forced else "")
+            + (f" (dont {sum(1 for t in top if 'outlier' in t)} prix atypiques signalés)" if nb_flagged > 0 else ""),
             "",
             f"{'Date':<12} {'Surface':>9} {'Prix total':>12} {'Prix m²':>10}  Adresse",
             "-" * 80,
         ]
 
+        _OUTLIER_LABELS = {
+            "low": "  ⚠️ prix atypique bas — bien probablement dégradé ou vente atypique",
+            "high": "  ⚠️ prix atypique haut — bien premium ou transaction exceptionnelle",
+        }
         for t in top:
             prix_tot = f"{t['prix_total']:,} €".replace(",", " ")
             prix_m2 = f"{t['prix_m2']:,} €/m²".replace(",", " ")
             surface_str = f"{t['surface_m2']} m²"
             adresse = t["adresse"].strip()[:35]
-            lines.append(
-                f"{t['date_mutation']:<12} {surface_str:>9} {prix_tot:>12} {prix_m2:>10}  {adresse}"
-            )
+            line = f"{t['date_mutation']:<12} {surface_str:>9} {prix_tot:>12} {prix_m2:>10}  {adresse}"
+            if t.get("same_street"):
+                line += "  📍 même rue"
+            if "outlier" in t:
+                line += _OUTLIER_LABELS[t["outlier"]]
+            lines.append(line)
 
         lines += [
             "",
@@ -228,9 +312,12 @@ def register_get_dvf_comparables_tool(mcp: FastMCP) -> None:
             json.dumps(
                 {
                     "nb_transactions_matching": nb_matching,
+                    "nb_iqr_excluded": nb_iqr_excluded,
+                    "nb_outliers_flagged": nb_flagged,
                     "date_premiere_vente": date_premiere,
                     "date_derniere_vente": date_derniere,
                     "periode_couverte": f"{date_premiere} → {date_derniere} (sources: 2014–2022 DVF dépt + 2023–2025-S1 DVF national)",
+                    "stats_prix_m2": stats_prix_m2,
                     "surface_filtre": {
                         "cible_m2": surface_cible,
                         "tolerance_pct": surface_tolerance_pct,

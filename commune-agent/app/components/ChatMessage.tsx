@@ -12,6 +12,7 @@ import { CommuneAnalysis } from "@/app/types";
 import { VizData } from "@/app/types/viz";
 
 const PDFButton = dynamic(() => import("@/app/components/PDFButton"), { ssr: false });
+const AccessibilityInline = dynamic(() => import("@/app/components/AccessibilityInline"), { ssr: false });
 
 
 interface SuggestOption {
@@ -28,6 +29,7 @@ interface ChatMessageProps {
   message: UIMessage;
   isStreaming: boolean;
   onSuggest?: (text: string) => void;
+  isReportMode?: boolean;
 }
 
 const ANSWER_MARKER = "===RÉPONSE===";
@@ -51,34 +53,62 @@ function parseAnalysisFromMessage(message: UIMessage): CommuneAnalysis | null {
   }
 }
 
-function parseVizBlocks(text: string): VizData[] {
-  const blocks: VizData[] = [];
-  const regex = /```json-viz\s*([\s\S]*?)\s*```/gi;
+interface AccessibilitySnap {
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+type ChatSegment =
+  | { type: "text"; content: string }
+  | { type: "viz"; data: VizData }
+  | { type: "accessibility"; snap: AccessibilitySnap };
+
+function parseChatSegments(text: string): ChatSegment[] {
+  const segments: ChatSegment[] = [];
+  const regex = /```(json-viz|json-accessibility)\s*([\s\S]*?)\s*```/gi;
+  let lastIdx = 0;
   let match: RegExpExecArray | null;
+
   while ((match = regex.exec(text)) !== null) {
-    try {
-      blocks.push(JSON.parse(match[1]) as VizData);
-    } catch {
-      // skip invalid blocks
+    const raw = text.slice(lastIdx, match.index)
+      .replace(/```json-suggest[\s\S]*?```/gi, "")
+      .replace(/```json[\s\S]*?```/gi, "")
+      .replace(/===RÉPONSE===/g, "")
+      .trim();
+    if (raw) segments.push({ type: "text", content: raw });
+
+    const blockType = match[1].toLowerCase();
+    const blockContent = match[2];
+    if (blockType === "json-viz") {
+      try { segments.push({ type: "viz", data: JSON.parse(blockContent) as VizData }); } catch { /* skip */ }
+    } else if (blockType === "json-accessibility") {
+      try { segments.push({ type: "accessibility", snap: JSON.parse(blockContent) as AccessibilitySnap }); } catch { /* skip */ }
     }
+    lastIdx = match.index + match[0].length;
   }
-  return blocks;
+
+  const remaining = text.slice(lastIdx)
+    .replace(/```json-suggest[\s\S]*?```/gi, "")
+    .replace(/```json[\s\S]*?```/gi, "")
+    .replace(/===RÉPONSE===/g, "")
+    .trim();
+  if (remaining) segments.push({ type: "text", content: remaining });
+
+  return segments;
 }
 
 function parseSuggestBlock(text: string): SuggestData | null {
   const match = /```json-suggest\s*([\s\S]*?)\s*```/i.exec(text);
   if (!match) return null;
-  try {
-    return JSON.parse(match[1]) as SuggestData;
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(match[1]) as SuggestData; } catch { return null; }
 }
 
 function stripJsonBlocks(text: string): string {
   return text
     .replace(/```json-suggest[\s\S]*?```/gi, "")
     .replace(/```json-viz[\s\S]*?```/gi, "")
+    .replace(/```json-accessibility[\s\S]*?```/gi, "")
     .replace(/```json[\s\S]*?```/gi, "")
     .replace(/===RÉPONSE===/g, "")
     .trim();
@@ -201,7 +231,7 @@ function ThrottledMarkdown({ text, isStreaming }: { text: string; isStreaming: b
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ChatMessage({ message, isStreaming, onSuggest }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming, onSuggest, isReportMode = false }: ChatMessageProps) {
   if (message.role === "user") {
     const text = (message.parts ?? [])
       .filter((p): p is { type: "text"; text: string } => p.type === "text")
@@ -266,7 +296,7 @@ export default function ChatMessage({ message, isStreaming, onSuggest }: ChatMes
     }
 
     const displayText = stripJsonBlocks(answerText);
-    const vizBlocks = parseVizBlocks(answerText);
+    const chatSegments = !isStreaming ? parseChatSegments(answerText) : [];
     const suggestData = !isStreaming ? parseSuggestBlock(answerText) : null;
     const analysis = parseAnalysisFromMessage(message);
 
@@ -304,13 +334,17 @@ export default function ChatMessage({ message, isStreaming, onSuggest }: ChatMes
             </div>
           )}
 
-          {/* Answer text */}
-          {displayText && <ThrottledMarkdown text={displayText} isStreaming={isStreaming} />}
-
-          {/* Viz blocks */}
-          {vizBlocks.map((viz, i) => (
-            <DataViz key={i} viz={viz} />
-          ))}
+          {/* During streaming: single throttled block. After: interleaved segments. */}
+          {isStreaming ? (
+            displayText && <ThrottledMarkdown text={displayText} isStreaming={isStreaming} />
+          ) : (
+            chatSegments.map((seg, i) => {
+              if (seg.type === "text") return <ThrottledMarkdown key={i} text={seg.content} isStreaming={false} />;
+              if (seg.type === "viz") return <DataViz key={i} viz={seg.data} />;
+              if (seg.type === "accessibility") return <AccessibilityInline key={i} address={seg.snap.address} lat={seg.snap.lat} lng={seg.snap.lng} />;
+              return null;
+            })
+          )}
 
           {/* Suggest buttons — disambiguation */}
           {suggestData && onSuggest && (
@@ -324,12 +358,12 @@ export default function ChatMessage({ message, isStreaming, onSuggest }: ChatMes
             </div>
           )}
 
-          {/* Result cards — only when commune JSON detected */}
-          {analysis && <ResultCards analysis={analysis} />}
+          {/* Result cards — hidden in report mode (shown in ReportPanel instead) */}
+          {analysis && !isReportMode && <ResultCards analysis={analysis} />}
         </div>
 
-        {/* Rapport — shown once streaming is complete */}
-        {!isStreaming && (
+        {/* Rapport button — hidden in report mode */}
+        {!isStreaming && !isReportMode && (
           <div className="flex justify-end pt-1" style={{ opacity: 0.7 }}>
             <PDFButton analysis={analysis} fullText={answerText} />
           </div>

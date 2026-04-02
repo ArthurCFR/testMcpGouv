@@ -312,19 +312,24 @@ def register_get_dvf_par_rue_tool(mcp: FastMCP) -> None:
         try:
             async with httpx.AsyncClient(timeout=30.0) as session:
                 all_rows, total = await _fetch_all_rows(resource_id, code_commune, session)
-        except tabular_api_client.ResourceNotAvailableError:
-            logger.info(
-                "Tabular API unavailable for dept %s, falling back to SQLite cache", dept
-            )
+        except Exception as tabular_err:  # noqa: BLE001
+            is_404 = isinstance(tabular_err, tabular_api_client.ResourceNotAvailableError)
+            if is_404:
+                logger.info(
+                    "Tabular API 404 for dept %s, falling back to SQLite cache", dept
+                )
+            else:
+                logger.warning(
+                    "Tabular API error for dept %s (%s), falling back to SQLite cache",
+                    dept, tabular_err,
+                )
             try:
                 await _ensure_dept_cached(resource_id)
                 all_rows, total = _fetch_rows_from_cache(resource_id, code_commune)
-            except Exception as e:  # noqa: BLE001
-                logger.exception(f"Cache fallback failed for dept {dept}")
-                return f"❌ Données DVF indisponibles pour le département {dept} (Tabular API 404, cache échoué : {e})"
-        except Exception as e:  # noqa: BLE001
-            logger.exception(f"Error fetching DVF par rue for {code_commune}")
-            return f"❌ Erreur lors de la récupération des données : {e}"
+            except Exception as cache_err:  # noqa: BLE001
+                logger.exception("Cache fallback failed for dept %s", dept)
+                reason = "Tabular API 404" if is_404 else f"Tabular API : {tabular_err}"
+                return f"❌ Données DVF indisponibles pour le département {dept} ({reason}, cache échoué : {cache_err})"
 
         if not all_rows:
             return (

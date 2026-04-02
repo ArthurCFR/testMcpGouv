@@ -149,6 +149,10 @@ function trainBadgeHtml(): string {
   </div>`;
 }
 
+function tramLineLabel(line: string): string {
+  return line.match(/^T\d/i) ? line : `T${line}`;
+}
+
 function stopBadgeHtml(stop: TransitStop): string {
   if (stop.type === "train") return trainBadgeHtml();
   const lines = stop.lines.slice(0, 1);
@@ -159,46 +163,73 @@ function stopBadgeHtml(stop: TransitStop): string {
   }
   const color = getLineColor(stop.type, lines[0]);
   return stop.type === "tram"
-    ? squareHtml(color, lines[0])
+    ? squareHtml(color, tramLineLabel(lines[0]))
     : circleHtml(color, lines[0]);
 }
 
-/**
- * Composite icon: label card above + badge below.
- * The iconAnchor is set so the badge center is at the geographic coordinate.
- */
-function makeTransitLabelIcon(stop: TransitStop): L.DivIcon {
-  const name = stop.name.length > 20 ? stop.name.slice(0, 18) + "…" : stop.name;
-  const timeLabel = `${stop.walkingTime} min à pied`;
-  const badge = stopBadgeHtml(stop);
-  const badgeH = stop.type === "train" ? 26 : 26;
-  const CARD_H = 38;
-  const GAP = 5;
-  const totalH = CARD_H + GAP + badgeH;
-  const W = 140;
+// ── In-frame label placement: badge + card as separate markers ────────────────
 
+const LABEL_W = 140;
+const LABEL_H = 38;
+const BADGE_R = 13; // half of 26px badge
+
+/**
+ * 8 candidate offsets (dx, dy) from badge center to label card center.
+ * Ordered by preference: N first (cartographic convention), then cardinal, then diagonal.
+ */
+const LABEL_CANDIDATES: [number, number][] = [
+  [0,  -(BADGE_R + LABEL_H / 2 + 6)],                    // N  (preferred)
+  [0,   (BADGE_R + LABEL_H / 2 + 6)],                    // S
+  [ (BADGE_R + LABEL_W / 2 + 8), 0],                     // E
+  [-(BADGE_R + LABEL_W / 2 + 8), 0],                     // W
+  [ (LABEL_W / 2 + 4), -(BADGE_R + LABEL_H / 2 + 4)],   // NE
+  [-(LABEL_W / 2 + 4), -(BADGE_R + LABEL_H / 2 + 4)],   // NW
+  [ (LABEL_W / 2 + 4),  (BADGE_R + LABEL_H / 2 + 4)],   // SE
+  [-(LABEL_W / 2 + 4),  (BADGE_R + LABEL_H / 2 + 4)],   // SW
+];
+
+/**
+ * Extended candidates used as a second-pass fallback when standard ones all overlap the pin.
+ * Offsets are ~60-90px larger to escape the pin exclusion zone.
+ */
+const LABEL_FAR_CANDIDATES: [number, number][] = [
+  [0,  -(BADGE_R + LABEL_H / 2 + 65)],
+  [0,   (BADGE_R + LABEL_H / 2 + 65)],
+  [ (BADGE_R + LABEL_W / 2 + 85), 0],
+  [-(BADGE_R + LABEL_W / 2 + 85), 0],
+  [ (LABEL_W / 2 + 70), -(BADGE_R + LABEL_H / 2 + 55)],
+  [-(LABEL_W / 2 + 70), -(BADGE_R + LABEL_H / 2 + 55)],
+  [ (LABEL_W / 2 + 70),  (BADGE_R + LABEL_H / 2 + 55)],
+  [-(LABEL_W / 2 + 70),  (BADGE_R + LABEL_H / 2 + 55)],
+];
+
+/** Badge-only marker (centered on geographic coordinate). */
+function makeBadgeIcon(stop: TransitStop): L.DivIcon {
+  const W = stop.type === "train" ? 32 : 26;
+  const H = 26;
   return L.divIcon({
     className: "",
-    iconSize: [W, totalH],
-    iconAnchor: [W / 2, CARD_H + GAP + badgeH / 2],
-    html: `<div style="position:relative;width:${W}px;height:${totalH}px;">
-      <!-- label card -->
-      <div style="position:absolute;top:0;left:0;right:0;height:${CARD_H}px;
-        background:white;border-radius:7px;padding:4px 8px;box-sizing:border-box;
-        border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(0,0,0,0.15);
-        font-family:system-ui,sans-serif;text-align:center;">
-        <div style="font-size:9.5px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">${name}</div>
-        <div style="font-size:8.5px;color:#6b7280;margin-top:2px;line-height:1.2;">${timeLabel}</div>
-      </div>
-      <!-- connector -->
-      <div style="position:absolute;top:${CARD_H}px;left:50%;transform:translateX(-50%);
-        width:0;height:0;
-        border-left:4px solid transparent;border-right:4px solid transparent;
-        border-top:${GAP}px solid white;"></div>
-      <!-- badge centered at bottom -->
-      <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);">
-        ${badge}
-      </div>
+    iconSize: [W, H],
+    iconAnchor: [W / 2, H / 2],
+    html: stopBadgeHtml(stop),
+  });
+}
+
+/** Label card marker (centered on computed best position). */
+function makeLabelCardIcon(stop: TransitStop): L.DivIcon {
+  const name = stop.name.length > 20 ? stop.name.slice(0, 18) + "…" : stop.name;
+  const timeLabel = `${stop.walkingTime} min à pied`;
+  return L.divIcon({
+    className: "",
+    iconSize: [LABEL_W, LABEL_H],
+    iconAnchor: [LABEL_W / 2, LABEL_H / 2],
+    html: `<div style="background:white;border-radius:7px;padding:4px 8px;
+      width:${LABEL_W}px;height:${LABEL_H}px;box-sizing:border-box;
+      border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(0,0,0,0.15);
+      font-family:system-ui,sans-serif;text-align:center;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;">
+      <div style="font-size:9.5px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:${LABEL_W - 16}px;">${name}</div>
+      <div style="font-size:8.5px;color:#6b7280;margin-top:2px;">${timeLabel}</div>
     </div>`,
   });
 }
@@ -328,9 +359,11 @@ function makeAirportEdgeIcon(airport: Airport, edge: EdgeDir): L.DivIcon {
 interface MapContentProps {
   data: AccessibilityData;
   onReady: () => void;
+  overrideTransit?: TransitStop[];
+  overrideAirports?: Airport[];
 }
 
-function MapContent({ data, onReady }: MapContentProps) {
+function MapContent({ data, onReady, overrideTransit, overrideAirports }: MapContentProps) {
   const map = useMap();
   const layersRef = useRef<L.Layer[]>([]);
 
@@ -346,6 +379,25 @@ function MapContent({ data, onReady }: MapContentProps) {
       minLng: mb.getWest(),
       maxLng: mb.getEast(),
     };
+
+    const containerSize = map.getSize();
+    const mapW = containerSize.x;
+    const mapH = containerSize.y;
+
+    // Clamp a border screen point so the full edge card stays within the viewport.
+    // halfPerp = half the card dimension perpendicular to the edge direction.
+    function clampBorderPt(rawPt: L.Point, edge: EdgeDir, halfPerp: number): L.Point {
+      if (edge === "n" || edge === "s") {
+        return L.point(
+          Math.max(halfPerp, Math.min(mapW - halfPerp, rawPt.x)),
+          rawPt.y,
+        );
+      }
+      return L.point(
+        rawPt.x,
+        Math.max(halfPerp, Math.min(mapH - halfPerp, rawPt.y)),
+      );
+    }
 
     // Clear previous layers
     layersRef.current.forEach((l) => l.remove());
@@ -375,89 +427,210 @@ function MapContent({ data, onReady }: MapContentProps) {
       return map.latLngToContainerPoint([slat, slng]);
     }
 
-    // ── Address marker (always) ──────────────────────────────────────────────
+    // ── Overlap scoring helper ────────────────────────────────────────────────
+    function overlapArea(a: Box, b: Box): number {
+      const dx = Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1);
+      const dy = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1);
+      return dx > 0 && dy > 0 ? dx * dy : 0;
+    }
+
+    // ── Address marker (always, sacred — always wins) ────────────────────────
     addLayer(L.marker([lat, lng], { icon: makeAddressIcon(), zIndexOffset: 1000 }));
     const addrPt = screenPt(lat, lng);
-    placed.push({ x1: addrPt.x - 20, y1: addrPt.y - 40, x2: addrPt.x + 20, y2: addrPt.y });
+    // Tight box for general collision; pinBox is the hard-exclusion zone (no other element may overlap it)
+    const PIN_PAD = 14;
+    const pinBox: Box = {
+      x1: addrPt.x - 20 - PIN_PAD,
+      y1: addrPt.y - 40 - PIN_PAD,
+      x2: addrPt.x + 20 + PIN_PAD,
+      y2: addrPt.y + PIN_PAD,
+    };
+    placed.push(pinBox);
 
-    // ── Limit: max 2 stops per transit line ─────────────────────────────────
-    const lineCount = new Map<string, number>();
-    const stopsFiltered = [...transitStops]
-      .sort((a, b) => a.walkingTime - b.walkingTime)
-      .filter((stop) => {
-        const keys =
-          stop.lines.length > 0
-            ? stop.lines.map((l) => `${stop.type}::${l}`)
-            : [`${stop.type}::__unknown__`];
-        const ok = keys.some((k) => (lineCount.get(k) ?? 0) < 2);
-        if (ok) keys.forEach((k) => lineCount.set(k, (lineCount.get(k) ?? 0) + 1));
-        return ok;
-      });
+    function overlapsPin(box: Box): boolean {
+      return overlapArea(box, pinBox) > 0;
+    }
 
-    const inFrame = stopsFiltered.filter((s) => isInFrame(s.lat, s.lng, bounds));
-    const outFrame = stopsFiltered.filter((s) => !isInFrame(s.lat, s.lng, bounds));
+    // ── Determine stops and airports to display ───────────────────────────────
+    // When overrides are provided (from parent selection), show all of them.
+    // Otherwise apply the line-count cap and collision filtering.
+    const useOverride = overrideTransit !== undefined;
+    const airportsToShow = overrideAirports ?? airports;
 
-    // ── Airport edge cards (priority placement) ──────────────────────────────
+    let stopsToShow: TransitStop[];
+    if (overrideTransit) {
+      stopsToShow = overrideTransit;
+    } else {
+      const lineCount = new Map<string, number>();
+      stopsToShow = [...transitStops]
+        .sort((a, b) => a.walkingTime - b.walkingTime)
+        .filter((stop) => {
+          const keys =
+            stop.lines.length > 0
+              ? stop.lines.map((l) => `${stop.type}::${l}`)
+              : [`${stop.type}::__unknown__`];
+          const ok = keys.some((k) => (lineCount.get(k) ?? 0) < 2);
+          if (ok) keys.forEach((k) => lineCount.set(k, (lineCount.get(k) ?? 0) + 1));
+          return ok;
+        });
+    }
+
+    const inFrame = stopsToShow.filter((s) => isInFrame(s.lat, s.lng, bounds));
+    const outFrame = stopsToShow.filter((s) => !isInFrame(s.lat, s.lng, bounds));
+
+    // ── Airport edge cards ────────────────────────────────────────────────────
     // CARD_W=176, CARD_H=48, A=8 → total edge size: N/S=[176,56], E/W=[184,48]
-    for (const airport of airports) {
+    const EDGE_SLIDE_OFFSETS = [0, 14, -14, 28, -28, 45, -45, 65, -65, 90, -90, 120, -120];
+    for (const airport of airportsToShow) {
       const edge = cardinalDir(lat, lng, airport.lat, airport.lng, cosLat);
       const [borderLat, borderLng] = clampToBorder(airport.lat, airport.lng, bounds, edge);
-      const p = screenPt(borderLat, borderLng);
-      let box: Box;
-      if (edge === "n")      box = { x1: p.x - 88, y1: p.y,      x2: p.x + 88, y2: p.y + 56 };
-      else if (edge === "s") box = { x1: p.x - 88, y1: p.y - 56, x2: p.x + 88, y2: p.y      };
-      else if (edge === "e") box = { x1: p.x - 184, y1: p.y - 24, x2: p.x,      y2: p.y + 24 };
-      else                   box = { x1: p.x,       y1: p.y - 24, x2: p.x + 184, y2: p.y + 24 };
-      if (!fits(box)) continue;
-      placed.push(box);
-      addLayer(
-        L.marker([borderLat, borderLng], {
-          icon: makeAirportEdgeIcon(airport, edge),
-          zIndexOffset: 900,
-        }),
-      );
+      const rawP = screenPt(borderLat, borderLng);
+      const halfPerp = edge === "n" || edge === "s" ? 88 : 24;
+      let chosen: L.LatLng | null = null;
+      for (const offset of EDGE_SLIDE_OFFSETS) {
+        const testP = edge === "n" || edge === "s"
+          ? L.point(rawP.x + offset, rawP.y)
+          : L.point(rawP.x, rawP.y + offset);
+        const safeP = clampBorderPt(testP, edge, halfPerp);
+        const p = safeP;
+        let box: Box;
+        if (edge === "n")      box = { x1: p.x - 88,  y1: p.y,      x2: p.x + 88,  y2: p.y + 56 };
+        else if (edge === "s") box = { x1: p.x - 88,  y1: p.y - 56, x2: p.x + 88,  y2: p.y      };
+        else if (edge === "e") box = { x1: p.x - 184, y1: p.y - 24, x2: p.x,        y2: p.y + 24 };
+        else                   box = { x1: p.x,        y1: p.y - 24, x2: p.x + 184, y2: p.y + 24 };
+        if (fits(box)) { placed.push(box); chosen = map.containerPointToLatLng(safeP); break; }
+      }
+      if (!chosen && useOverride) {
+        const safeP = clampBorderPt(rawP, edge, halfPerp);
+        const p = safeP;
+        let box: Box;
+        if (edge === "n")      box = { x1: p.x - 88,  y1: p.y,      x2: p.x + 88,  y2: p.y + 56 };
+        else if (edge === "s") box = { x1: p.x - 88,  y1: p.y - 56, x2: p.x + 88,  y2: p.y      };
+        else if (edge === "e") box = { x1: p.x - 184, y1: p.y - 24, x2: p.x,        y2: p.y + 24 };
+        else                   box = { x1: p.x,        y1: p.y - 24, x2: p.x + 184, y2: p.y + 24 };
+        if (!overlapsPin(box)) chosen = map.containerPointToLatLng(safeP);
+      }
+      if (chosen) {
+        addLayer(L.marker([chosen.lat, chosen.lng], { icon: makeAirportEdgeIcon(airport, edge), zIndexOffset: 900 }));
+      }
     }
 
-    // ── In-frame transit stops ───────────────────────────────────────────────
-    // Label card: W=140, totalH=69, iconAnchor=[70,56]
+    // ── In-frame transit stops (greedy 8-candidate placement) ────────────────
     for (const stop of inFrame) {
       const p = screenPt(stop.lat, stop.lng);
-      const box: Box = { x1: p.x - 70, y1: p.y - 56, x2: p.x + 70, y2: p.y + 13 };
-      if (!fits(box)) continue;
-      placed.push(box);
+      const badgeBox: Box = { x1: p.x - BADGE_R, y1: p.y - BADGE_R, x2: p.x + BADGE_R, y2: p.y + BADGE_R };
+
+      // Pin always wins over badge — unless overrides are active (explicitly selected stops)
+      if (overlapsPin(badgeBox)) {
+        if (!useOverride) continue;
+        // With override: show badge anyway, then attempt label at extended distance
+        if (stop.routeCoords && stop.routeCoords.length > 1) {
+          const color = stop.lines[0] ? getLineColor(stop.type, stop.lines[0]) : STOP_COLORS[stop.type];
+          addLayer(L.polyline(stop.routeCoords, { color, weight: 3, opacity: 0.7, dashArray: "6 4" }));
+        }
+        addLayer(L.marker([stop.lat, stop.lng], { icon: makeBadgeIcon(stop), zIndexOffset: 500 }));
+        // Badge overlaps pin so standard candidates will too — go straight to far candidates
+        let farBest = Infinity;
+        let farCand: [number, number] | null = null;
+        for (const [dx, dy] of [...LABEL_CANDIDATES, ...LABEL_FAR_CANDIDATES]) {
+          const cx = p.x + dx; const cy = p.y + dy;
+          const lb: Box = { x1: cx - LABEL_W / 2, y1: cy - LABEL_H / 2, x2: cx + LABEL_W / 2, y2: cy + LABEL_H / 2 };
+          if (lb.x1 < 0 || lb.x2 > mapW || lb.y1 < 0 || lb.y2 > mapH) continue;
+          if (overlapsPin(lb)) continue;
+          const score = placed.reduce((sum, b) => sum + overlapArea(lb, b), 0);
+          if (score < farBest) { farBest = score; farCand = [dx, dy]; }
+        }
+        if (farCand) {
+          const [dx, dy] = farCand;
+          const lcx = p.x + dx; const lcy = p.y + dy;
+          const lb: Box = { x1: lcx - LABEL_W / 2, y1: lcy - LABEL_H / 2, x2: lcx + LABEL_W / 2, y2: lcy + LABEL_H / 2 };
+          placed.push(lb);
+          const ll = map.containerPointToLatLng(L.point(lcx, lcy));
+          addLayer(L.polyline([[stop.lat, stop.lng], [ll.lat, ll.lng]], { color: "#9ca3af", weight: 1, opacity: 0.55 }));
+          addLayer(L.marker([ll.lat, ll.lng], { icon: makeLabelCardIcon(stop), zIndexOffset: 400 }));
+        }
+        continue;
+      }
 
       if (stop.routeCoords && stop.routeCoords.length > 1) {
-        const color = stop.lines[0]
-          ? getLineColor(stop.type, stop.lines[0])
-          : STOP_COLORS[stop.type];
-        addLayer(
-          L.polyline(stop.routeCoords, { color, weight: 3, opacity: 0.7, dashArray: "6 4" }),
-        );
+        const color = stop.lines[0] ? getLineColor(stop.type, stop.lines[0]) : STOP_COLORS[stop.type];
+        addLayer(L.polyline(stop.routeCoords, { color, weight: 3, opacity: 0.7, dashArray: "6 4" }));
       }
-      addLayer(
-        L.marker([stop.lat, stop.lng], { icon: makeTransitLabelIcon(stop), zIndexOffset: 500 }),
-      );
+
+      addLayer(L.marker([stop.lat, stop.lng], { icon: makeBadgeIcon(stop), zIndexOffset: 500 }));
+      placed.push(badgeBox);
+
+      // Greedy label placement — standard candidates first, extended as fallback
+      let bestScore = Infinity;
+      let bestCand: [number, number] | null = null;
+      for (const [dx, dy] of LABEL_CANDIDATES) {
+        const cx = p.x + dx;
+        const cy = p.y + dy;
+        const labelBox: Box = { x1: cx - LABEL_W / 2, y1: cy - LABEL_H / 2, x2: cx + LABEL_W / 2, y2: cy + LABEL_H / 2 };
+        if (labelBox.x1 < 0 || labelBox.x2 > mapW || labelBox.y1 < 0 || labelBox.y2 > mapH) continue;
+        if (overlapsPin(labelBox)) continue;
+        const score = placed.reduce((sum, b) => sum + overlapArea(labelBox, b), 0);
+        if (score < bestScore) { bestScore = score; bestCand = [dx, dy]; }
+      }
+      // If all standard candidates hit the pin, try extended positions
+      if (!bestCand && useOverride) {
+        for (const [dx, dy] of LABEL_FAR_CANDIDATES) {
+          const cx = p.x + dx;
+          const cy = p.y + dy;
+          const labelBox: Box = { x1: cx - LABEL_W / 2, y1: cy - LABEL_H / 2, x2: cx + LABEL_W / 2, y2: cy + LABEL_H / 2 };
+          if (labelBox.x1 < 0 || labelBox.x2 > mapW || labelBox.y1 < 0 || labelBox.y2 > mapH) continue;
+          if (overlapsPin(labelBox)) continue;
+          const score = placed.reduce((sum, b) => sum + overlapArea(labelBox, b), 0);
+          if (score < bestScore) { bestScore = score; bestCand = [dx, dy]; }
+        }
+      }
+      if (!bestCand) continue; // badge already placed, label impossible
+
+      const [dx, dy] = bestCand;
+      const labelCx = p.x + dx;
+      const labelCy = p.y + dy;
+      const labelBox: Box = { x1: labelCx - LABEL_W / 2, y1: labelCy - LABEL_H / 2, x2: labelCx + LABEL_W / 2, y2: labelCy + LABEL_H / 2 };
+      placed.push(labelBox);
+
+      const labelLatLng = map.containerPointToLatLng(L.point(labelCx, labelCy));
+      addLayer(L.polyline([[stop.lat, stop.lng], [labelLatLng.lat, labelLatLng.lng]], { color: "#9ca3af", weight: 1, opacity: 0.55 }));
+      addLayer(L.marker([labelLatLng.lat, labelLatLng.lng], { icon: makeLabelCardIcon(stop), zIndexOffset: 400 }));
     }
 
-    // ── Out-of-frame transit edge cards ─────────────────────────────────────
+    // ── Out-of-frame transit edge cards (with border sliding) ─────────────────
     // Edge card: CARD_W=148, CARD_H=46, A=7 → N/S=[148,53], E/W=[155,46]
     for (const stop of outFrame) {
       const edge = cardinalDir(lat, lng, stop.lat, stop.lng, cosLat);
       const [borderLat, borderLng] = clampToBorder(stop.lat, stop.lng, bounds, edge);
-      const p = screenPt(borderLat, borderLng);
-      let box: Box;
-      if (edge === "n")      box = { x1: p.x - 74, y1: p.y,      x2: p.x + 74, y2: p.y + 53 };
-      else if (edge === "s") box = { x1: p.x - 74, y1: p.y - 53, x2: p.x + 74, y2: p.y      };
-      else if (edge === "e") box = { x1: p.x - 155, y1: p.y - 23, x2: p.x,      y2: p.y + 23 };
-      else                   box = { x1: p.x,        y1: p.y - 23, x2: p.x + 155, y2: p.y + 23 };
-      if (!fits(box)) continue;
-      placed.push(box);
-      addLayer(
-        L.marker([borderLat, borderLng], {
-          icon: makeTransitEdgeIcon(stop, edge),
-          zIndexOffset: 800,
-        }),
-      );
+      const rawP = screenPt(borderLat, borderLng);
+      const halfPerp = edge === "n" || edge === "s" ? 74 : 23;
+      let chosen: L.LatLng | null = null;
+      for (const offset of EDGE_SLIDE_OFFSETS) {
+        const testP = edge === "n" || edge === "s"
+          ? L.point(rawP.x + offset, rawP.y)
+          : L.point(rawP.x, rawP.y + offset);
+        const safeP = clampBorderPt(testP, edge, halfPerp);
+        const p = safeP;
+        let box: Box;
+        if (edge === "n")      box = { x1: p.x - 74,  y1: p.y,      x2: p.x + 74,  y2: p.y + 53 };
+        else if (edge === "s") box = { x1: p.x - 74,  y1: p.y - 53, x2: p.x + 74,  y2: p.y      };
+        else if (edge === "e") box = { x1: p.x - 155, y1: p.y - 23, x2: p.x,        y2: p.y + 23 };
+        else                   box = { x1: p.x,        y1: p.y - 23, x2: p.x + 155, y2: p.y + 23 };
+        if (fits(box)) { placed.push(box); chosen = map.containerPointToLatLng(safeP); break; }
+      }
+      if (!chosen && useOverride) {
+        const safeP = clampBorderPt(rawP, edge, halfPerp);
+        const p = safeP;
+        let box: Box;
+        if (edge === "n")      box = { x1: p.x - 74,  y1: p.y,      x2: p.x + 74,  y2: p.y + 53 };
+        else if (edge === "s") box = { x1: p.x - 74,  y1: p.y - 53, x2: p.x + 74,  y2: p.y      };
+        else if (edge === "e") box = { x1: p.x - 155, y1: p.y - 23, x2: p.x,        y2: p.y + 23 };
+        else                   box = { x1: p.x,        y1: p.y - 23, x2: p.x + 155, y2: p.y + 23 };
+        if (!overlapsPin(box)) chosen = map.containerPointToLatLng(safeP);
+      }
+      if (chosen) {
+        addLayer(L.marker([chosen.lat, chosen.lng], { icon: makeTransitEdgeIcon(stop, edge), zIndexOffset: 800 }));
+      }
     }
 
     // Wait for tiles to load then signal ready
@@ -483,16 +656,22 @@ export interface SnapshotMapHandle {
 
 interface Props {
   data: AccessibilityData;
-  size?: number;
+  size?: number;          // legacy square size (backward-compat)
+  width?: number;         // explicit width, overrides size
+  height?: number;        // explicit height, overrides size
   onReady?: () => void;
+  overrideTransit?: TransitStop[];   // pre-selected stops; skip collision filtering
+  overrideAirports?: Airport[];      // pre-selected airports; skip collision filtering
 }
 
 const SnapshotMap = forwardRef<SnapshotMapHandle, Props>(function SnapshotMap(
-  { data, size = 600, onReady },
+  { data, size = 600, width, height, onReady, overrideTransit, overrideAirports },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const zoom = computeZoom(data.lat, size, FRAME_KM);
+  const W = width ?? size;
+  const H = height ?? size;
+  const zoom = computeZoom(data.lat, Math.min(W, H), FRAME_KM);
 
   useImperativeHandle(ref, () => ({
     async capture(): Promise<string> {
@@ -512,7 +691,7 @@ const SnapshotMap = forwardRef<SnapshotMapHandle, Props>(function SnapshotMap(
   return (
     <div
       ref={containerRef}
-      style={{ width: size, height: size, flexShrink: 0, borderRadius: 8, overflow: "hidden" }}
+      style={{ width: W, height: H, flexShrink: 0, borderRadius: 8, overflow: "hidden" }}
     >
       <MapContainer
         center={[data.lat, data.lng]}
@@ -530,7 +709,7 @@ const SnapshotMap = forwardRef<SnapshotMapHandle, Props>(function SnapshotMap(
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           crossOrigin="anonymous"
         />
-        <MapContent data={data} onReady={onReady ?? (() => {})} />
+        <MapContent data={data} onReady={onReady ?? (() => {})} overrideTransit={overrideTransit} overrideAirports={overrideAirports} />
       </MapContainer>
     </div>
   );

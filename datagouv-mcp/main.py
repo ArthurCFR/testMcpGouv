@@ -25,14 +25,23 @@ logger.setLevel(logging.DEBUG)
 
 # Configure transport security for DNS rebinding protection (mcp >= 1.23)
 # Per MCP spec: MUST validate Origin header, SHOULD bind to localhost when running locally
-# Allow connections from production domain and localhost for development
+# EXTRA_ALLOWED_ORIGINS: comma-separated list of additional origins (e.g. Vercel frontend)
+_extra_origins = [
+    o.strip() for o in os.getenv("EXTRA_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
+_extra_hosts = [
+    o.replace("https://", "").replace("http://", "").split(":")[0]
+    for o in _extra_origins
+]
+
 transport_security = TransportSecuritySettings(
-    enable_dns_rebinding_protection=False,  # dev local: appel serveur-à-serveur, pas de risque navigateur
+    enable_dns_rebinding_protection=bool(_extra_origins),  # enable in prod, disable in local dev
     allowed_hosts=[
         "mcp.data.gouv.fr",
         "mcp.preprod.data.gouv.fr",
         "localhost",
         "127.0.0.1",
+        *_extra_hosts,
     ],
     # Validate Origin header to prevent DNS rebinding attacks (MCP spec requirement)
     allowed_origins=[
@@ -40,6 +49,7 @@ transport_security = TransportSecuritySettings(
         "https://mcp.preprod.data.gouv.fr",
         "http://localhost:*",
         "http://127.0.0.1:*",
+        *_extra_origins,
     ],
 )
 
