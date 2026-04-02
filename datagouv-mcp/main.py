@@ -123,7 +123,7 @@ asgi_app = with_monitoring(mcp.streamable_http_app())
 
 # Run with streamable HTTP transport
 if __name__ == "__main__":
-    port_str = os.getenv("MCP_PORT", "8000")
+    port_str = os.getenv("PORT", os.getenv("MCP_PORT", "8000"))
     try:
         port = int(port_str)
     except ValueError:
