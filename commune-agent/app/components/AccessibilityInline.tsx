@@ -59,13 +59,16 @@ interface AccessibilityInlineProps {
   lng: number;
 }
 
+// Use Railway endpoint if available (has transit .db files), else fall back to local API
+const ACCESSIBILITY_API = process.env.NEXT_PUBLIC_ACCESSIBILITY_API_URL || "/api/accessibility/analyze";
+
 export default function AccessibilityInline({ address, lat, lng }: AccessibilityInlineProps) {
   const [data, setData] = useState<AccessibilityData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/accessibility/analyze", {
+    fetch(ACCESSIBILITY_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lng, address }),

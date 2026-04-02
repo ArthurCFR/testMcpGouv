@@ -11,6 +11,7 @@ import uvicorn
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from helpers.accessibility_api import handle_accessibility_request
 from helpers.matomo import track_matomo
 from tools import register_tools
 
@@ -80,6 +81,22 @@ def with_monitoring(
                 await send({"type": "http.response.start", "status": 405, "headers": [(b"content-length", b"0"), (b"allow", b"POST")]})
                 await send({"type": "http.response.body", "body": b""})
                 return
+
+            # Handle /api/accessibility endpoint (CORS preflight + POST)
+            if path == "/api/accessibility":
+                if method == "OPTIONS":
+                    await send({"type": "http.response.start", "status": 204, "headers": [
+                        (b"access-control-allow-origin", b"*"),
+                        (b"access-control-allow-methods", b"POST, OPTIONS"),
+                        (b"access-control-allow-headers", b"Content-Type"),
+                        (b"access-control-max-age", b"86400"),
+                        (b"content-length", b"0"),
+                    ]})
+                    await send({"type": "http.response.body", "body": b""})
+                    return
+                if method == "POST":
+                    await handle_accessibility_request(scope, receive, send)
+                    return
 
             # Handle /health endpoint (no tracking)
             if path == "/health":
