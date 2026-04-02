@@ -15,6 +15,7 @@ RUN uv sync --frozen
 # Expose port (default 8000, configurable via MCP_PORT env var)
 EXPOSE 8000
 
-# Run
-ENTRYPOINT ["uv", "run"]
-CMD ["python", "main.py"]
+# Run — preload IDF cache (idempotent) then start MCP server
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
