@@ -7,7 +7,7 @@ RUN apt-get update -y && \
 
 # Install dependencies
 WORKDIR /app
-ADD . /app/
+COPY . /app/
 # Railway uploads without .git — setuptools-scm needs a fallback version
 ENV SETUPTOOLS_SCM_PRETEND_VERSION=0.1.0
 RUN uv sync --frozen
