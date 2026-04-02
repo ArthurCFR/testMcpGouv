@@ -34,24 +34,27 @@ def register_get_accessibility_snapshot_tool(mcp: FastMCP) -> None:
         if not address:
             return "❌ Erreur : l'adresse ne peut pas être vide."
 
+        client = httpx.AsyncClient(timeout=10.0)
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(
-                    _BAN_URL,
-                    params={"q": address, "limit": 1},
-                    headers={"User-Agent": "CommuneAgent/1.0 (accessibility)"},
-                )
-                resp.raise_for_status()
-                data = resp.json()
+            resp = await client.get(
+                _BAN_URL,
+                params={"q": address, "limit": 1},
+                headers={"User-Agent": "CommuneAgent/1.0 (accessibility)"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
         except httpx.HTTPStatusError as e:
+            await client.aclose()
             logger.exception("BAN API HTTP error")
             return f"❌ Erreur BAN API : {e.response.status_code} — {e.response.text[:200]}"
         except Exception as e:
+            await client.aclose()
             logger.exception("BAN API network error")
             return f"❌ Erreur réseau BAN API : {e}"
 
         features = data.get("features", [])
         if not features:
+            await client.aclose()
             return (
                 f"❌ Adresse introuvable dans la BAN : « {address} ».\n"
                 f"Essayez avec l'adresse complète (numéro + rue + ville)."
@@ -65,6 +68,7 @@ def register_get_accessibility_snapshot_tool(mcp: FastMCP) -> None:
         score = props.get("score", 0)
 
         if score < 0.3:
+            await client.aclose()
             return (
                 f"⚠️ Adresse géocodée avec un faible indice de confiance (score={score:.2f}) : "
                 f"« {label} ». Précisez l'adresse si le résultat semble incorrect."
@@ -113,6 +117,8 @@ def register_get_accessibility_snapshot_tool(mcp: FastMCP) -> None:
         except Exception as e:
             logger.warning("Accessibility analyze call failed: %s", e)
             transit_summary = "Données de transports non disponibles (service non joignable)."
+        finally:
+            await client.aclose()
 
         transit_section = f"**Transports en commun (à pied depuis l'adresse) :**\n{transit_summary}"
         airport_section = (f"\n\n**Aéroports proches (en voiture) :**\n{airport_summary}") if airport_summary else ""

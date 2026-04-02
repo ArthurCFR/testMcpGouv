@@ -16,12 +16,17 @@ from tools import register_tools
 
 # Configure logging
 LOGGER_NAME = "datagouv_mcp"
+_log_level = logging.DEBUG if os.getenv("DATAGOUV_ENV") != "prod" else logging.INFO
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=_log_level,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(LOGGER_NAME)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(_log_level)
+# Silence verbose HTTP debug logs in prod
+if _log_level >= logging.INFO:
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Configure transport security for DNS rebinding protection (mcp >= 1.23)
 # Per MCP spec: MUST validate Origin header, SHOULD bind to localhost when running locally
