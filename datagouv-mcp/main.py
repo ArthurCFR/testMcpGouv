@@ -26,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 # Configure transport security for DNS rebinding protection (mcp >= 1.23)
 # Per MCP spec: MUST validate Origin header, SHOULD bind to localhost when running locally
 # EXTRA_ALLOWED_ORIGINS: comma-separated list of additional origins (e.g. Vercel frontend)
+# RAILWAY_PUBLIC_DOMAIN: auto-set by Railway (e.g. immoagent-production.up.railway.app)
 _extra_origins = [
     o.strip() for o in os.getenv("EXTRA_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
@@ -33,6 +34,7 @@ _extra_hosts = [
     o.replace("https://", "").replace("http://", "").split(":")[0]
     for o in _extra_origins
 ]
+_railway_host = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
 
 transport_security = TransportSecuritySettings(
     enable_dns_rebinding_protection=bool(_extra_origins),  # enable in prod, disable in local dev
@@ -42,6 +44,7 @@ transport_security = TransportSecuritySettings(
         "localhost",
         "127.0.0.1",
         *_extra_hosts,
+        *([_railway_host] if _railway_host else []),
     ],
     # Validate Origin header to prevent DNS rebinding attacks (MCP spec requirement)
     allowed_origins=[
