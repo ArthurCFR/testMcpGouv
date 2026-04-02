@@ -243,7 +243,7 @@ export default function ChatMessage({ message, isStreaming, onSuggest, isReportM
         <div
           className="max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap"
           style={{
-            background: "#d4af37",
+            background: "var(--c21-gold)",
             color: "#0f1115",
             fontWeight: 500,
             borderRadius: "18px 18px 4px 18px",

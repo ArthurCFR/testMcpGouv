@@ -172,13 +172,13 @@ export default function ReportPanel({
       {/* ── Scrollable paper area ── */}
       <div
         className="flex-1 overflow-y-auto"
-        style={{ background: "#f4f1ec", padding: "28px 20px" }}
+        style={{ background: "var(--c21-bg)", padding: "28px 20px" }}
       >
         <div
           style={{
             maxWidth: 700,
             margin: "0 auto",
-            background: "#ffffff",
+            background: "var(--c21-sidebar-bg)",
             borderRadius: 4,
             padding: "32px 40px 48px",
             boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
@@ -189,7 +189,7 @@ export default function ReportPanel({
           {isUpdating && (
             <div style={{
               position: "absolute", inset: 0, zIndex: 10, borderRadius: 4,
-              background: "rgba(255,255,255,0.80)", backdropFilter: "blur(2px)",
+              background: "var(--c21-header-bg)", backdropFilter: "blur(2px)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <div className="flex gap-2">
@@ -223,11 +223,12 @@ export default function ReportPanel({
                     border: `1.5px solid ${C21_GOLD}`,
                     padding: "14px",
                     fontSize: "0.875rem",
-                    color: "#374151",
+                    color: "var(--c21-text)",
                     lineHeight: 1.7,
                     outline: "none",
                     fontFamily: "system-ui,-apple-system,sans-serif",
                     boxSizing: "border-box",
+                    background: "var(--c21-input-bg)",
                   }}
                 />
                 <div className="flex gap-2 mt-2 justify-end">
@@ -264,8 +265,8 @@ export default function ReportPanel({
                     gap: 4,
                     fontSize: "0.7rem",
                     color: "#78716c",
-                    background: "#f4f1ec",
-                    border: "1px solid #e8e0d5",
+                    background: "var(--c21-card-bg)",
+                    border: "1px solid var(--c21-border)",
                     borderRadius: 6,
                     padding: "3px 8px",
                     cursor: "pointer",
@@ -281,7 +282,7 @@ export default function ReportPanel({
                   Modifier
                 </button>
 
-                <div className="prose prose-sm max-w-none" style={{ color: "#374151" }}>
+                <div className="prose prose-sm max-w-none c21-prose">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{current.narrative}</ReactMarkdown>
                 </div>
               </div>
@@ -297,8 +298,8 @@ export default function ReportPanel({
           {analysis && <ResultCards analysis={analysis} hideMeta />}
 
           {/* ── Notes zone ── */}
-          <div style={{ marginTop: 32, borderTop: "1px solid #e8e0d5", paddingTop: 20 }}>
-            <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#a8a29e", marginBottom: 10 }}>
+          <div style={{ marginTop: 32, borderTop: "1px solid var(--c21-border)", paddingTop: 20 }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--c21-text-muted)", marginBottom: 10 }}>
               Notes
             </div>
             <textarea
@@ -310,18 +311,19 @@ export default function ReportPanel({
                 width: "100%",
                 resize: "vertical",
                 borderRadius: 8,
-                border: "1.5px solid #e8e0d5",
+                border: "1.5px solid var(--c21-border)",
                 padding: "10px 14px",
                 fontSize: "0.875rem",
-                color: "#374151",
+                color: "var(--c21-text)",
                 lineHeight: 1.6,
                 outline: "none",
                 transition: "border-color 0.15s",
                 fontFamily: "system-ui,-apple-system,sans-serif",
                 boxSizing: "border-box",
+                background: "var(--c21-input-bg)",
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = C21_GOLD)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d5")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--c21-border)")}
             />
           </div>
         </div>

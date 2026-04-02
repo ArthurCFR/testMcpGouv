@@ -9,8 +9,8 @@ import { getLineColor, getContrastText } from "@/app/lib/transitColors";
 const SnapshotMap = dynamic(() => import("@/app/components/SnapshotMap"), {
   ssr: false,
   loading: () => (
-    <div style={{ width: "100%", height: 300, background: "#f0f0f0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <span style={{ color: "#9ca3af", fontSize: 13 }}>Chargement de la carte…</span>
+    <div style={{ width: "100%", height: 300, background: "var(--c21-panel-bg)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ color: "var(--c21-text-muted)", fontSize: 13 }}>Chargement de la carte…</span>
     </div>
   ),
 });
@@ -97,7 +97,7 @@ export default function AccessibilityInline({ address, lat, lng }: Accessibility
               }}
             />
           ))}
-          <span style={{ fontSize: 12, color: "#78716c", marginLeft: 6 }}>
+          <span style={{ fontSize: 12, color: "var(--c21-text-muted)", marginLeft: 6 }}>
             Analyse de l&apos;accessibilité…
           </span>
         </div>
@@ -108,7 +108,7 @@ export default function AccessibilityInline({ address, lat, lng }: Accessibility
 
   if (error || !data) {
     return (
-      <div style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, border: "1px solid #fca5a5", color: "#b91c1c", fontSize: 12 }}>
+      <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: 12 }}>
         Carte d&apos;accessibilité indisponible{error ? ` : ${error}` : ""}
       </div>
     );
@@ -119,12 +119,12 @@ export default function AccessibilityInline({ address, lat, lng }: Accessibility
   const airports = selectAirportDestinations(data.airports, 2);
 
   return (
-    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e8e0d5", background: "#f4f1ec", marginTop: 4 }}>
+    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--c21-border)", background: "var(--c21-card-bg)", marginTop: 4 }}>
       {/* Header */}
-      <div style={{ padding: "9px 14px", background: "#1c1917", borderBottom: "2px solid #b09a7a", display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ padding: "9px 14px", background: "var(--c21-sidebar-bg)", borderBottom: "2px solid var(--c21-gold)", display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 13 }}>📍</span>
-        <span style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", letterSpacing: "-0.2px" }}>Accessibilité</span>
-        <span style={{ color: "#b09a7a", fontSize: "0.78rem", marginLeft: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ color: "var(--c21-text)", fontWeight: 700, fontSize: "0.82rem", letterSpacing: "-0.2px" }}>Accessibilité</span>
+        <span style={{ color: "var(--c21-gold)", fontSize: "0.78rem", marginLeft: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {address}
         </span>
       </div>
@@ -150,26 +150,26 @@ export default function AccessibilityInline({ address, lat, lng }: Accessibility
             return (
               <div
                 key={i}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: "white", borderRadius: 8, padding: "5px 10px", border: "1px solid #e5e7eb", fontSize: 11 }}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--c21-panel-bg)", borderRadius: 8, padding: "5px 10px", border: "1px solid var(--c21-border)", fontSize: 11 }}
               >
                 <div style={{ display: "flex", gap: 3 }}>
                   {badges.length > 0
                     ? badges.map((line, j) => <TransitBadge key={j} type={s.type} lines={[line]} />)
                     : <TransitBadge type={s.type} lines={[]} />}
                 </div>
-                <span style={{ fontWeight: 700, color: "#111827" }}>{s.name}</span>
-                <span style={{ color: "#6b7280" }}>{s.walkingTime} min à pied</span>
+                <span style={{ fontWeight: 700, color: "var(--c21-text)" }}>{s.name}</span>
+                <span style={{ color: "var(--c21-text-muted)" }}>{s.walkingTime} min à pied</span>
               </div>
             );
           })}
           {airports.map((a, i) => (
             <div
               key={i}
-              style={{ display: "flex", alignItems: "center", gap: 6, background: "white", borderRadius: 8, padding: "5px 10px", border: "1px solid #e5e7eb", fontSize: 11 }}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--c21-panel-bg)", borderRadius: 8, padding: "5px 10px", border: "1px solid var(--c21-border)", fontSize: 11 }}
             >
               <span style={{ fontSize: 12 }}>✈</span>
-              <span style={{ fontWeight: 700, color: "#111827" }}>{a.city} · {a.iata}</span>
-              <span style={{ color: "#6b7280" }}>{a.drivingTime} min en voiture</span>
+              <span style={{ fontWeight: 700, color: "var(--c21-text)" }}>{a.city} · {a.iata}</span>
+              <span style={{ color: "var(--c21-text-muted)" }}>{a.drivingTime} min en voiture</span>
             </div>
           ))}
         </div>
