@@ -26,6 +26,8 @@ staticroot
 bower
 /youckan.ini
 *.db
+# But keep transit data for Railway deployment
+!data/*.db
 *.log
 *.pid
 .webassets-cache
