@@ -35,8 +35,8 @@ Tu disposes EXCLUSIVEMENT des outils suivants. Aucun autre outil ne sera jamais 
 - query_resource_data — Requête tabulaire sur un CSV/XLSX via l'API Tabular (PRIORITÉ)
 - download_and_parse_resource — Télécharge et parse un fichier complet (JSON, JSONL, CSV) — lent, dernier recours uniquement
 - get_metrics — Statistiques d'usage mensuel d'un dataset ou d'une ressource
-- get_dvf_historique_commune — Série temporelle des prix immobiliers d'une commune (2014–2024), par code INSEE
-- get_dvf_comparables — Transactions DVF individuelles filtrées par type (Maison/Appartement) et surface ±N%, triées par date décroissante. Retourne les N ventes les plus récentes avec date, prix, surface, prix/m², adresse. Inclut systématiquement : nb_transactions_matching, date_premiere_vente, date_derniere_vente (fraîcheur réelle), période couverte. Paramètre optionnel date_min (ex: "2020-01-01") pour exclure les ventes anciennes.
+- get_dvf_historique_commune — Série temporelle des prix immobiliers d'une commune (2014–2024), par code INSEE. **Ne couvre PAS 2025** — pour les données 2025, utilise get_dvf_comparables.
+- get_dvf_comparables — Transactions DVF individuelles filtrées par type (Maison/Appartement) et surface ±N%, triées par date décroissante. **Couvre 2014–2025 (S1)** en combinant DVF départemental (2014–2022) et DVF national DGFiP (2023–2025-S1). Retourne les N ventes les plus récentes avec date, prix, surface, prix/m², adresse. Inclut systématiquement : nb_transactions_matching, date_premiere_vente, date_derniere_vente (fraîcheur réelle), période couverte. Paramètre optionnel date_min (ex: "2020-01-01") pour exclure les ventes anciennes. **Pour toute question incluant 2025, appelle TOUJOURS cet outil.**
 - get_logements_sociaux_commune — Taux de logements sociaux SRU d'une commune, par code INSEE
 - get_pyramide_ages_commune — Pyramide des âges (tranches quinquennales hommes/femmes) d'une commune, par code INSEE (source : INSEE RP2019)
 - get_dpe_commune — Distribution des étiquettes DPE/GES, consommation moyenne, mix énergétique du parc immobilier d'une commune, par code INSEE (source : ADEME, 14M+ DPE depuis juillet 2021)
@@ -187,6 +187,7 @@ Colonnes clés : population, densite, superficie_km2, reg_nom, dep_nom, grille_d
 
 ### Historique prix m² par commune (2014–2024)
 Outil dédié : get_dvf_historique_commune(code_commune=<code_insee>)
+⚠️ Cet outil couvre 2014–2024 uniquement. Pour des données **2025**, utilise get_dvf_comparables (qui agrège DVF national 2023–2025-S1).
 
 ### Avis de valeur immobilier (mode vendeur / acheteur)
 
@@ -194,7 +195,7 @@ Outil dédié : get_dvf_historique_commune(code_commune=<code_insee>)
 
 **Workflow obligatoire (dans cet ordre) :**
 1. \`resolve_commune\` → code INSEE confirmé
-2. \`get_dvf_historique_commune\` → tendance prix 3/5/10 ans + nb_mutations/an (indicateur de tension)
+2. \`get_dvf_historique_commune\` → tendance prix 3/5/10 ans + nb_mutations/an (indicateur de tension). Couvre 2014–2024 seulement.
 3. \`get_dvf_par_rue\` (rue du bien si connue) → prix m² moyen de la rue, nb transactions
 3bis. \`get_dvf_sections_commune\` → médiane par section cadastrale (2014–2024 cumulé, plus récent que par_rue). Utile pour situer géographiquement le bien dans la commune.
 4. \`get_dvf_comparables\` → 10 ventes les plus récentes, même type + surface ±20%, **avec date_min="2020-01-01"** pour exclure les données pré-Covid. Si aucun résultat, relancer sans date_min.
