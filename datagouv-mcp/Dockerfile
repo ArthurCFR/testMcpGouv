@@ -8,6 +8,8 @@ RUN apt-get update -y && \
 # Install dependencies
 WORKDIR /app
 ADD . /app/
+# Railway uploads without .git — setuptools-scm needs a fallback version
+ENV SETUPTOOLS_SCM_PRETEND_VERSION=0.1.0
 RUN uv sync --frozen
 
 # Expose port (default 8000, configurable via MCP_PORT env var)
