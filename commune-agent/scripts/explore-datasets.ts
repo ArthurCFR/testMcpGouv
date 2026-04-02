@@ -19,8 +19,9 @@ async function main() {
   const client = new Client({ name: "explore-datasets", version: "1.0.0" });
   process.stderr.write(`Connecting to MCP at ${MCP_URL}…\n`);
 
-  const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
-    requestInit: { headers: { Host: "localhost" } },
+  const mcpUrl = new URL(MCP_URL);
+  const transport = new StreamableHTTPClientTransport(mcpUrl, {
+    requestInit: { headers: { Host: mcpUrl.hostname } },
   });
 
   await client.connect(transport);

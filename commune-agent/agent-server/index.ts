@@ -71,9 +71,9 @@ const MCP_SERVER_URL = process.env.MCP_SERVER_URL ?? "http://localhost:8000/mcp"
 
 async function createMCPClient(): Promise<Client> {
   const client = new Client({ name: "commune-agent", version: "1.0.0" });
-  const transport = new StreamableHTTPClientTransport(new URL(MCP_SERVER_URL), {
-    requestInit: { headers: { Host: "localhost" } },
-    // Pas de fetch: → (this._fetch ?? fetch) utilise globalThis.fetch Node.js
+  const mcpUrl = new URL(MCP_SERVER_URL);
+  const transport = new StreamableHTTPClientTransport(mcpUrl, {
+    requestInit: { headers: { Host: mcpUrl.hostname } },
   });
   await client.connect(transport);
   return client;
